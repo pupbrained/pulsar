@@ -58,7 +58,7 @@ impl Parser {
         let (expr, tokens_new) = match tokens.next() {
             Some(Token::Identifier(ident)) => match tokens.next() {
                 Some(Token::SetVal) => {
-                    let (expr, tokens_new) = Parser::parse_expr(tokens, false);
+                    let (expr, tokens_new) = Parser::parse_expr(tokens, true);
                     (
                         Expr::BinaryExpr {
                             op: Operator::SetVal,
@@ -115,10 +115,11 @@ impl Parser {
             _ => (Expr::Token(Token::Error), tokens),
         };
         if sc_check {
-            if tokens_new.next() == Some(&Token::Semicolon) {
+            if tokens_new.peek() == Some(&&Token::Semicolon) {
+                tokens_new.next();
                 (expr, tokens_new)
             } else {
-                panic!("Expected semicolon");
+                panic!("Expected semicolon, got {:?}", tokens_new.next());
             }
         } else {
             (expr, tokens_new)

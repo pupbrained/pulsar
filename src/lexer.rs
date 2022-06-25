@@ -9,6 +9,9 @@ pub(crate) enum Token {
     #[token("=")]
     Equal,
 
+    #[token("!=")]
+    NotEqual,
+
     #[regex(r#""([^"\\]|\\t|\\u|\\n|\\")*""#, |lex| lex.slice().parse::<String>().unwrap().substring(1, lex.slice().len() - 1).to_string())]
     String(String),
 
