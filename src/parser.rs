@@ -1,14 +1,14 @@
-use std::{iter::Peekable, slice::Iter};
+use std::{fmt::Display, iter::Peekable, slice::Iter};
 
 use crate::lexer::Token;
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct Parser {
+pub struct Parser {
     tokens: Vec<Token>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) enum Operator {
+pub enum Operator {
     Add,
     Sub,
     Mul,
@@ -18,8 +18,22 @@ pub(crate) enum Operator {
     SetVal,
 }
 
+impl Display for Operator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Operator::Add => write!(f, "+"),
+            Operator::Sub => write!(f, "-"),
+            Operator::Mul => write!(f, "*"),
+            Operator::Div => write!(f, "/"),
+            Operator::Eq => write!(f, "="),
+            Operator::Neq => write!(f, "!="),
+            Operator::SetVal => write!(f, ":="),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) enum Expr {
+pub enum Expr {
     Token(Token),
     UnaryExpr {
         op: Operator,
@@ -30,6 +44,21 @@ pub(crate) enum Expr {
         lhs: Box<Expr>,
         rhs: Box<Expr>,
     },
+    FnCall {
+        name: String,
+        args: Vec<Expr>,
+    },
+}
+
+impl Display for Expr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Expr::Token(t) => write!(f, "{}", t),
+            Expr::UnaryExpr { op, expr } => write!(f, "{} {}", op, expr),
+            Expr::BinaryExpr { op, lhs, rhs } => write!(f, "{} {} {}", lhs, op, rhs),
+            Expr::FnCall { name, args } => write!(f, "{}({:?})", name, args),
+        }
+    }
 }
 
 impl Parser {
@@ -44,7 +73,7 @@ impl Parser {
             let this = &tokens.clone();
             this.len() != 0
         } {
-            let (expr, tokens_new) = Parser::parse_expr(tokens, false);
+            let (expr, tokens_new) = Parser::parse_expr(tokens, true);
             tokens = tokens_new;
             exprs.push(expr);
         }
@@ -58,7 +87,7 @@ impl Parser {
         let (expr, tokens_new) = match tokens.next() {
             Some(Token::Identifier(ident)) => match tokens.next() {
                 Some(Token::SetVal) => {
-                    let (expr, tokens_new) = Parser::parse_expr(tokens, true);
+                    let (expr, tokens_new) = Parser::parse_expr(tokens, false);
                     (
                         Expr::BinaryExpr {
                             op: Operator::SetVal,
@@ -68,11 +97,22 @@ impl Parser {
                         tokens_new,
                     )
                 }
+                Some(Token::LParen) => {
+                    let (expr, tokens_new) = Parser::parse_expr(tokens, false);
+                    (
+                        Expr::FnCall {
+                            name: ident.into(),
+                            args: vec![expr],
+                        },
+                        tokens_new,
+                    )
+                }
                 _ => (Expr::Token(Token::Identifier(ident.into())), tokens),
             },
-            Some(Token::Num(num)) => match tokens.next() {
+            Some(Token::Num(num)) => match tokens.peek() {
                 Some(Token::Semicolon) => (Expr::Token(Token::Num(*num)), tokens),
                 Some(Token::Operator(op)) => {
+                    tokens.next();
                     let (expr, tokens_new) = Parser::parse_expr(tokens, false);
                     match op.as_str() {
                         "+" => (
@@ -107,6 +147,22 @@ impl Parser {
                             },
                             tokens_new,
                         ),
+                        "=" => (
+                            Expr::BinaryExpr {
+                                op: Operator::Eq,
+                                lhs: Box::new(Expr::Token(Token::Num(*num))),
+                                rhs: Box::new(expr),
+                            },
+                            tokens_new,
+                        ),
+                        "!=" => (
+                            Expr::BinaryExpr {
+                                op: Operator::Neq,
+                                lhs: Box::new(Expr::Token(Token::Num(*num))),
+                                rhs: Box::new(expr),
+                            },
+                            tokens_new,
+                        ),
                         _ => todo!(),
                     }
                 }
@@ -115,11 +171,10 @@ impl Parser {
             _ => (Expr::Token(Token::Error), tokens),
         };
         if sc_check {
-            if tokens_new.peek() == Some(&&Token::Semicolon) {
-                tokens_new.next();
+            if tokens_new.next() == Some(&&Token::Semicolon) {
                 (expr, tokens_new)
             } else {
-                panic!("Expected semicolon, got {:?}", tokens_new.next());
+                panic!("Expected semicolon");
             }
         } else {
             (expr, tokens_new)

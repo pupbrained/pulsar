@@ -1,7 +1,13 @@
+mod interpreter;
 mod lexer;
 mod parser;
-use logos::Logos;
-use std::{fs::File, io::Read};
+use {
+    interpreter::Interpreter,
+    lexer::Token,
+    logos::Logos,
+    parser::Parser,
+    std::{fs::File, io::Read},
+};
 
 fn read_file() -> String {
     let mut file = File::open("examples/ex1.psar").unwrap();
@@ -11,7 +17,8 @@ fn read_file() -> String {
 }
 
 fn main() {
-    let lex: Vec<_> = lexer::Token::lexer(&read_file()).collect();
-    println!("{:?}", lex);
-    println!("{:?}", parser::Parser::new(lex).parse());
+    let lex: Vec<_> = Token::lexer(&read_file()).collect();
+    let exprs: Vec<_> = Parser::new(lex).parse();
+    let mut interpreter: Interpreter = Interpreter::new(exprs);
+    interpreter.run();
 }
