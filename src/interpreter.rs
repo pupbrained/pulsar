@@ -21,18 +21,22 @@ impl Interpreter {
         }
     }
 
+    pub fn interpret_expr(&mut self, expr: Expr) {
+        match expr {
+            Expr::BinaryExpr {
+                op: Operator::SetVal,
+                lhs,
+                rhs,
+            } => {
+                self.state.globals.insert(lhs.to_string(), *rhs.clone());
+            }
+            _ => {}
+        }
+    }
+
     pub fn run(&mut self) {
         for expr in &self.exprs {
-            match expr {
-                Expr::BinaryExpr {
-                    op: Operator::SetVal,
-                    lhs,
-                    rhs,
-                } => {
-                    self.state.globals.insert(lhs.to_string(), *rhs.clone());
-                }
-                _ => {}
-            }
+            self.interpret_expr(expr)
         }
         println!("{:?}", self.state.globals);
     }
