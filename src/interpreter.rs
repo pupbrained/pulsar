@@ -1,3 +1,5 @@
+use crate::lexer::Token;
+
 use {
     crate::parser::{Expr, Operator},
     std::collections::HashMap,
@@ -36,12 +38,17 @@ impl Interpreter {
                 lhs,
                 rhs,
             } => {
-                self.state
-                    .globals
-                    .insert(lhs.to_string(), self.interpret_expr(rhs));
+                let right_side = self.interpret_expr(rhs);
+                self.state.globals.insert(lhs.to_string(), right_side);
+                return ValueType::Nothing;
             }
-            _ => {}
-        }
+            Expr::Token(x) => match x {
+                Token::Num(x) => ValueType::Int((*x).try_into().unwrap()),
+                Token::String(x) => ValueType::String(x.to_string()),
+                _ => ValueType::Nothing,
+            },
+            _ => ValueType::Nothing,
+        };
         ValueType::Nothing
     }
 
