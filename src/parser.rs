@@ -130,7 +130,7 @@ impl Parser {
                                         args,
                                     },
                                     tokens_new,
-                                )
+                                );
                             }
                             _ => panic!("Expected ',' or ')'"),
                         }
