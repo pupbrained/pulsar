@@ -108,7 +108,7 @@ impl Parser {
                     )
                 }
                 Some(Token::LParen) => {
-                    let args = Vec::new();
+                    let mut args = Vec::new();
                     match tokens.next() {
                         Some(Token::RParen) => (
                             Expr::FnCall {
@@ -117,9 +117,23 @@ impl Parser {
                             },
                             tokens,
                         ),
-                        Some(Token::Identifier(_ident_arg)) => {
-                            todo!()
-                        }
+                        Some(Token::Identifier(_ident_arg)) => loop {
+                            let (mut expr, mut tokens_new) = Parser::parse_expr(tokens, false);
+                            args.push(expr);
+                            match tokens_new.next() {
+                                Some(Token::Comma) => (),
+                                Some(Token::RParen) => {
+                                    return (
+                                        Expr::FnCall {
+                                            name: ident.into(),
+                                            args,
+                                        },
+                                        tokens_new,
+                                    )
+                                }
+                                _ => panic!("Expected ',' or ')'"),
+                            }
+                        },
                         _ => panic!("Expected identifier or ')'"),
                     }
                 }
