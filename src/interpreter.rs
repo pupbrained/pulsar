@@ -133,6 +133,7 @@ impl Interpreter {
             Expr::Token(x) => match x {
                 Token::Num(x) => ValueType::Int(*x),
                 Token::String(x) => ValueType::String(x.to_string()),
+                Token::Bool(x) => ValueType::Bool(*x),
                 _ => ValueType::Nothing,
             },
             _ => ValueType::Nothing,
