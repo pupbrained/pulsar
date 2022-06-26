@@ -35,10 +35,6 @@ impl Display for Operator {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Token(Token),
-    UnaryExpr {
-        op: Operator,
-        expr: Box<Expr>,
-    },
     BinaryExpr {
         op: Operator,
         lhs: Box<Expr>,
@@ -54,7 +50,6 @@ impl Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Expr::Token(t) => write!(f, "{}", t),
-            Expr::UnaryExpr { op, expr } => write!(f, "{} {}", op, expr),
             Expr::BinaryExpr { op, lhs, rhs } => write!(f, "{} {} {}", lhs, op, rhs),
             Expr::FnCall { name, args } => write!(f, "{}({:?})", name, args),
         }
@@ -168,10 +163,11 @@ impl Parser {
                 }
                 _ => todo!(),
             },
+            Some(Token::Bool(bool)) => (Expr::Token(Token::Bool(*bool)), tokens),
             _ => (Expr::Token(Token::Error), tokens),
         };
         if sc_check {
-            if tokens_new.next() == Some(&&Token::Semicolon) {
+            if tokens_new.next() == Some(&Token::Semicolon) {
                 (expr, tokens_new)
             } else {
                 panic!("Expected semicolon");

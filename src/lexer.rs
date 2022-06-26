@@ -5,12 +5,6 @@ pub enum Token {
     #[token(":=")]
     SetVal,
 
-    #[token("=")]
-    Equal,
-
-    #[token("!=")]
-    NotEqual,
-
     #[regex(r#""([^"\\]|\\t|\\u|\\n|\\")*""#, |lex| lex.slice().parse::<String>().unwrap().substring(1, lex.slice().len() - 1).to_string())]
     String(String),
 
@@ -18,7 +12,10 @@ pub enum Token {
     Identifier(String),
 
     #[regex("[0-9]+", |lex| lex.slice().parse())]
-    Num(u64),
+    Num(i64),
+
+    #[regex("true|false", |lex| lex.slice().parse())]
+    Bool(bool),
 
     #[token("(")]
     LParen,
@@ -41,7 +38,7 @@ pub enum Token {
     #[token(";")]
     Semicolon,
 
-    #[regex(r"[+\-*/]", |lex| lex.slice().to_string())]
+    #[regex(r"!=|[=+\-*/]", |lex| lex.slice().to_string())]
     Operator(String),
 
     #[error]
@@ -53,11 +50,10 @@ impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Token::SetVal => write!(f, ":="),
-            Token::Equal => write!(f, "="),
-            Token::NotEqual => write!(f, "!="),
             Token::String(s) => write!(f, "{}", s),
             Token::Identifier(s) => write!(f, "{}", s),
             Token::Num(n) => write!(f, "{}", n),
+            Token::Bool(b) => write!(f, "{}", b),
             Token::LParen => write!(f, "("),
             Token::RParen => write!(f, ")"),
             Token::LBrace => write!(f, "{{"),

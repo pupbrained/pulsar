@@ -18,6 +18,7 @@ pub struct State {
 pub enum ValueType {
     Int(i64),
     String(String),
+    Bool(bool),
     Nothing,
 }
 
@@ -40,21 +41,107 @@ impl Interpreter {
             } => {
                 let right_side = self.interpret_expr(rhs);
                 self.state.globals.insert(lhs.to_string(), right_side);
-                return ValueType::Nothing;
+                ValueType::Nothing
+            }
+            Expr::BinaryExpr {
+                op: Operator::Add,
+                lhs,
+                rhs,
+            } => {
+                let left_side = self.interpret_expr(lhs);
+                let right_side = self.interpret_expr(rhs);
+                match (left_side, right_side) {
+                    (ValueType::Int(left), ValueType::Int(right)) => ValueType::Int(left + right),
+                    (ValueType::String(left), ValueType::String(right)) => {
+                        ValueType::String(left + &right)
+                    }
+                    _ => panic!("Cannot add non-numeric values"),
+                }
+            }
+            Expr::BinaryExpr {
+                op: Operator::Sub,
+                lhs,
+                rhs,
+            } => {
+                let left_side = self.interpret_expr(lhs);
+                let right_side = self.interpret_expr(rhs);
+                match (left_side, right_side) {
+                    (ValueType::Int(left), ValueType::Int(right)) => ValueType::Int(left - right),
+                    _ => panic!("Cannot subtract non-numeric values"),
+                }
+            }
+            Expr::BinaryExpr {
+                op: Operator::Mul,
+                lhs,
+                rhs,
+            } => {
+                let left_side = self.interpret_expr(lhs);
+                let right_side = self.interpret_expr(rhs);
+                match (left_side, right_side) {
+                    (ValueType::Int(left), ValueType::Int(right)) => ValueType::Int(left * right),
+                    _ => panic!("Cannot multiply non-numeric values"),
+                }
+            }
+            Expr::BinaryExpr {
+                op: Operator::Div,
+                lhs,
+                rhs,
+            } => {
+                let left_side = self.interpret_expr(lhs);
+                let right_side = self.interpret_expr(rhs);
+                match (left_side, right_side) {
+                    (ValueType::Int(left), ValueType::Int(right)) => ValueType::Int(left / right),
+                    _ => panic!("Cannot divide non-numeric values"),
+                }
+            }
+            Expr::BinaryExpr {
+                op: Operator::Eq,
+                lhs,
+                rhs,
+            } => {
+                let left_side = self.interpret_expr(lhs);
+                let right_side = self.interpret_expr(rhs);
+                match (left_side, right_side) {
+                    (ValueType::Int(left), ValueType::Int(right)) => ValueType::Bool(left == right),
+                    (ValueType::String(left), ValueType::String(right)) => {
+                        ValueType::Bool(left == right)
+                    }
+                    (ValueType::Bool(left), ValueType::Bool(right)) => {
+                        ValueType::Bool(left == right)
+                    }
+                    _ => panic!("Cannot compare non-numeric values"),
+                }
+            }
+            Expr::BinaryExpr {
+                op: Operator::Neq,
+                lhs,
+                rhs,
+            } => {
+                let left_side = self.interpret_expr(lhs);
+                let right_side = self.interpret_expr(rhs);
+                match (left_side, right_side) {
+                    (ValueType::Int(left), ValueType::Int(right)) => ValueType::Bool(left != right),
+                    (ValueType::String(left), ValueType::String(right)) => {
+                        ValueType::Bool(left != right)
+                    }
+                    (ValueType::Bool(left), ValueType::Bool(right)) => {
+                        ValueType::Bool(left != right)
+                    }
+                    _ => panic!("Cannot compare non-numeric values"),
+                }
             }
             Expr::Token(x) => match x {
-                Token::Num(x) => ValueType::Int((*x).try_into().unwrap()),
+                Token::Num(x) => ValueType::Int(*x),
                 Token::String(x) => ValueType::String(x.to_string()),
                 _ => ValueType::Nothing,
             },
             _ => ValueType::Nothing,
-        };
-        ValueType::Nothing
+        }
     }
 
     pub fn run(&mut self) {
         for expr in &self.exprs.clone() {
-            self.interpret_expr(&expr);
+            self.interpret_expr(expr);
         }
         println!("{:?}", self.state.globals);
     }
