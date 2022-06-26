@@ -18,6 +18,21 @@ pub enum Operator {
     SetVal,
 }
 
+impl Operator {
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "+" => Self::Add,
+            "-" => Self::Sub,
+            "*" => Self::Mul,
+            "/" => Self::Div,
+            "==" => Self::Eq,
+            "!=" => Self::Neq,
+            ":=" => Self::SetVal,
+            _ => panic!("Unknown operator"),
+        }
+    }
+}
+
 impl Display for Operator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -93,11 +108,31 @@ impl Parser {
                     )
                 }
                 Some(Token::LParen) => {
+                    let mut args = Vec::new();
+                    match tokens.next() {
+                        Some(Token::RParen) => (
+                            Expr::FnCall {
+                                name: ident.into(),
+                                args,
+                            },
+                            tokens,
+                        ),
+                        Some(Token::Identifier(ident_arg)) => {
+                            args.push(Expr::Token(Token::Identifier(ident_arg.into())));
+                            match tokens.next() {
+                                _ => panic!("Expected ','"),
+                            }
+                        }
+                        _ => panic!("Expected identifier or ')'"),
+                    }
+                }
+                Some(Token::Operator(op)) => {
                     let (expr, tokens_new) = Parser::parse_expr(tokens, false);
                     (
-                        Expr::FnCall {
-                            name: ident.into(),
-                            args: vec![expr],
+                        Expr::BinaryExpr {
+                            op: Operator::from_str(&op),
+                            lhs: Box::new(Expr::Token(Token::Identifier(ident.into()))),
+                            rhs: Box::new(expr),
                         },
                         tokens_new,
                     )
@@ -158,10 +193,10 @@ impl Parser {
                             },
                             tokens_new,
                         ),
-                        _ => todo!(),
+                        _ => panic!("Expected operator"),
                     }
                 }
-                _ => todo!(),
+                _ => panic!("Expected operator"),
             },
             Some(Token::Bool(bool)) => (Expr::Token(Token::Bool(*bool)), tokens),
             _ => (Expr::Token(Token::Error), tokens),

@@ -19,7 +19,30 @@ pub enum ValueType {
     Int(i64),
     String(String),
     Bool(bool),
+    Fn(FnType),
     Nothing,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum FnType {
+    Builtin(BuiltinFn),
+    User(UserFn),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct BuiltinFn {
+    pub name: String,
+    pub args: Vec<String>,
+    pub body: Vec<Expr>,
+    pub return_type: Box<ValueType>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct UserFn {
+    pub name: String,
+    pub args: Vec<String>,
+    pub body: Vec<Expr>,
+    pub return_type: Box<ValueType>,
 }
 
 impl Interpreter {
@@ -134,6 +157,13 @@ impl Interpreter {
                 Token::Num(x) => ValueType::Int(*x),
                 Token::String(x) => ValueType::String(x.to_string()),
                 Token::Bool(x) => ValueType::Bool(*x),
+                Token::Identifier(x) => {
+                    if let Some(val) = self.state.globals.get(x) {
+                        val.clone()
+                    } else {
+                        panic!("Undefined variable: {}", x)
+                    }
+                }
                 _ => ValueType::Nothing,
             },
             _ => ValueType::Nothing,

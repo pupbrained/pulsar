@@ -38,6 +38,9 @@ pub enum Token {
     #[token(";")]
     Semicolon,
 
+    #[token(",")]
+    Comma,
+
     #[regex(r"!=|[=+\-*/]", |lex| lex.slice().to_string())]
     Operator(String),
 
@@ -61,6 +64,7 @@ impl Display for Token {
             Token::LBracket => write!(f, "["),
             Token::RBracket => write!(f, "]"),
             Token::Semicolon => write!(f, ";"),
+            Token::Comma => write!(f, ","),
             Token::Operator(s) => write!(f, "{}", s),
             Token::Error => write!(f, "Error"),
         }
