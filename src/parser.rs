@@ -91,7 +91,7 @@ impl Parser {
     }
 
     pub fn parse_expr<'a>(
-        tokens: &'a mut Peekable<Iter<'a, Token>>,
+        mut tokens: &'a mut Peekable<Iter<'a, Token>>,
         sc_check: bool,
     ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
         let (expr, tokens_new) = match tokens.next() {
@@ -109,32 +109,32 @@ impl Parser {
                 }
                 Some(Token::LParen) => {
                     let mut args = Vec::new();
-                    match tokens.next() {
-                        Some(Token::RParen) => (
+                    if tokens.peek() == Some(&&Token::RParen) {
+                        return (
                             Expr::FnCall {
                                 name: ident.into(),
                                 args,
                             },
                             tokens,
-                        ),
-                        Some(Token::Identifier(_ident_arg)) => loop {
-                            let (mut expr, mut tokens_new) = Parser::parse_expr(tokens, false);
-                            args.push(expr);
-                            match tokens_new.next() {
-                                Some(Token::Comma) => (),
-                                Some(Token::RParen) => {
-                                    return (
-                                        Expr::FnCall {
-                                            name: ident.into(),
-                                            args,
-                                        },
-                                        tokens_new,
-                                    )
-                                }
-                                _ => panic!("Expected ',' or ')'"),
+                        );
+                    };
+                    loop {
+                        let (expr, tokens_new) = Parser::parse_expr(tokens, false);
+                        args.push(expr);
+                        match tokens_new.next() {
+                            Some(Token::Comma) => (),
+                            Some(Token::RParen) => {
+                                return (
+                                    Expr::FnCall {
+                                        name: ident.into(),
+                                        args,
+                                    },
+                                    tokens_new,
+                                )
                             }
-                        },
-                        _ => panic!("Expected identifier or ')'"),
+                            _ => panic!("Expected ',' or ')'"),
+                        }
+                        tokens = tokens_new;
                     }
                 }
                 Some(Token::Operator(op)) => {
