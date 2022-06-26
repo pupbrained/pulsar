@@ -1,7 +1,8 @@
-use crate::lexer::Token;
-
 use {
-    crate::parser::{Expr, Operator},
+    crate::{
+        lexer::Token,
+        parser::{Expr, Operator},
+    },
     std::collections::HashMap,
 };
 
@@ -19,15 +20,15 @@ pub enum ValueType {
     Int(i64),
     String(String),
     Bool(bool),
-    Fn(FnType),
+    // Fn(FnType),
     Nothing,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum FnType {
-    Builtin(BuiltinFn),
-    User(UserFn),
-}
+// #[derive(Debug, Clone, PartialEq)]
+// pub enum FnType {
+// Builtin(BuiltinFn),
+// User(UserFn),
+// }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BuiltinFn {

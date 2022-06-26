@@ -34,7 +34,7 @@ impl Operator {
 }
 
 impl Display for Operator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Operator::Add => write!(f, "+"),
             Operator::Sub => write!(f, "-"),
@@ -62,7 +62,7 @@ pub enum Expr {
 }
 
 impl Display for Expr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Expr::Token(t) => write!(f, "{}", t),
             Expr::BinaryExpr { op, lhs, rhs } => write!(f, "{} {} {}", lhs, op, rhs),
@@ -108,7 +108,7 @@ impl Parser {
                     )
                 }
                 Some(Token::LParen) => {
-                    let mut args = Vec::new();
+                    let args = Vec::new();
                     match tokens.next() {
                         Some(Token::RParen) => (
                             Expr::FnCall {
@@ -117,11 +117,8 @@ impl Parser {
                             },
                             tokens,
                         ),
-                        Some(Token::Identifier(ident_arg)) => {
-                            args.push(Expr::Token(Token::Identifier(ident_arg.into())));
-                            match tokens.next() {
-                                _ => panic!("Expected ','"),
-                            }
+                        Some(Token::Identifier(_ident_arg)) => {
+                            todo!()
                         }
                         _ => panic!("Expected identifier or ')'"),
                     }
@@ -130,7 +127,7 @@ impl Parser {
                     let (expr, tokens_new) = Parser::parse_expr(tokens, false);
                     (
                         Expr::BinaryExpr {
-                            op: Operator::from_str(&op),
+                            op: Operator::from_str(op),
                             lhs: Box::new(Expr::Token(Token::Identifier(ident.into()))),
                             rhs: Box::new(expr),
                         },
@@ -199,6 +196,7 @@ impl Parser {
                 _ => panic!("Expected operator"),
             },
             Some(Token::Bool(bool)) => (Expr::Token(Token::Bool(*bool)), tokens),
+            Some(Token::String(string)) => (Expr::Token(Token::String(string.into())), tokens),
             _ => (Expr::Token(Token::Error), tokens),
         };
         if sc_check {

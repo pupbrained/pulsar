@@ -5,10 +5,10 @@ pub enum Token {
     #[token(":=")]
     SetVal,
 
-    #[regex(r#""([^"\\]|\\t|\\u|\\n|\\")*""#, |lex| lex.slice().parse::<String>().unwrap().substring(1, lex.slice().len() - 1).to_string())]
+    #[regex(r#""([^"\\]|\\t|\\u|\\n|\\")*""#, |lex| lex.slice().parse::<String>().unwrap().substring(1, lex.slice().len() - 1).parse())]
     String(String),
 
-    #[regex("[a-zA-AZ]+", |lex| lex.slice().to_string())]
+    #[regex("[a-zA-AZ]+", |lex| lex.slice().parse())]
     Identifier(String),
 
     #[regex("[0-9]+", |lex| lex.slice().parse())]
@@ -41,7 +41,7 @@ pub enum Token {
     #[token(",")]
     Comma,
 
-    #[regex(r"!=|[=+\-*/]", |lex| lex.slice().to_string())]
+    #[regex(r"!=|[=+\-*/]", |lex| lex.slice().parse())]
     Operator(String),
 
     #[error]
@@ -50,10 +50,10 @@ pub enum Token {
 }
 
 impl Display for Token {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Token::SetVal => write!(f, ":="),
-            Token::String(s) => write!(f, "{}", s),
+            Token::String(s) => write!(f, "\"{}\"", s),
             Token::Identifier(s) => write!(f, "{}", s),
             Token::Num(n) => write!(f, "{}", n),
             Token::Bool(b) => write!(f, "{}", b),
