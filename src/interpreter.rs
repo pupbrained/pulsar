@@ -1,6 +1,7 @@
-use crate::parser::Operator;
-
-use {crate::parser::Expr, std::collections::HashMap};
+use {
+    crate::parser::{Expr, Operator},
+    std::collections::HashMap,
+};
 
 pub struct Interpreter {
     pub state: State,
@@ -8,7 +9,14 @@ pub struct Interpreter {
 }
 
 pub struct State {
-    pub globals: HashMap<String, Expr>,
+    pub globals: HashMap<String, ValueType>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ValueType {
+    Int(i64),
+    String(String),
+    Nothing,
 }
 
 impl Interpreter {
@@ -21,22 +29,25 @@ impl Interpreter {
         }
     }
 
-    pub fn interpret_expr(&mut self, expr: Expr) {
+    pub fn interpret_expr(&mut self, expr: &Expr) -> ValueType {
         match expr {
             Expr::BinaryExpr {
                 op: Operator::SetVal,
                 lhs,
                 rhs,
             } => {
-                self.state.globals.insert(lhs.to_string(), *rhs.clone());
+                self.state
+                    .globals
+                    .insert(lhs.to_string(), self.interpret_expr(rhs));
             }
             _ => {}
         }
+        ValueType::Nothing
     }
 
     pub fn run(&mut self) {
-        for expr in &self.exprs {
-            self.interpret_expr(expr)
+        for expr in &self.exprs.clone() {
+            self.interpret_expr(&expr);
         }
         println!("{:?}", self.state.globals);
     }
