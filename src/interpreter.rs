@@ -1,13 +1,13 @@
-use std::ops::Deref;
-
 use {
     crate::{
+        builtins,
         lexer::Token,
         parser::{Expr, Operator},
     },
     std::{
         collections::HashMap,
         fmt::{Display, Formatter},
+        ops::Deref,
     },
 };
 
@@ -38,7 +38,6 @@ pub enum FnType {
 #[derive(Debug, Clone, PartialEq)]
 pub struct BuiltinFn {
     pub name: String,
-    pub args: Vec<ValueType>,
     pub return_type: Box<ValueType>,
 }
 
@@ -90,7 +89,6 @@ impl Interpreter {
             "print".to_string(),
             ValueType::Fn(FnType::Builtin(BuiltinFn {
                 name: "print".to_string(),
-                args: vec![ValueType::String("".to_string())],
                 return_type: Box::new(ValueType::Nothing),
             })),
         );
@@ -216,7 +214,7 @@ impl Interpreter {
                 for arg in args {
                     args_vec.push(self.interpret_expr(arg));
                 }
-                self.call_fn(name)
+                self.call_fn(name, args_vec)
             }
         }
     }
@@ -227,31 +225,12 @@ impl Interpreter {
         }
     }
 
-    pub fn call_fn(&mut self, name: &str) -> ValueType {
+    pub fn call_fn(&mut self, name: &str, args: Vec<ValueType>) -> ValueType {
         match self.state.globals.get(name) {
             Some(key) => match key {
                 ValueType::Fn(FnType::Builtin(BuiltinFn {
-                    name,
-                    return_type,
-                    args,
-                })) => match name.as_str() {
-                    "print" => {
-                        if args.len() > 1 {
-                            for arg in args {
-                                if arg == &args[args.len() - 1] {
-                                    print!("{}", arg);
-                                } else {
-                                    print!("{}, ", arg);
-                                }
-                            }
-                            println!();
-                        } else {
-                            println!("{}", args[0]);
-                        }
-                        return_type.deref().to_owned()
-                    }
-                    _ => panic!("Not a function"),
-                },
+                    name, return_type, ..
+                })) => builtins::call_builtin(name, args, return_type.deref().to_owned()),
                 _ => panic!("Not a function"),
             },
             _ => panic!("Undefined function: {}", name),
