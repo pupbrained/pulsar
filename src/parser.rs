@@ -211,7 +211,6 @@ impl Parser {
         } else {
             loop {
                 let (arg, tokens_new) = Self::parse_expr(tokens, false);
-                println!("{} -- {:?}", arg, tokens_new.peek());
                 args.push(arg);
                 match tokens_new.next() {
                     Some(Token::Comma) => (),

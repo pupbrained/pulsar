@@ -7,4 +7,6 @@ c := b + 3;
 d := "hello!";
 e := d + "2";
 f := e + "3";
-print(a, b, c);
+print(a, b, c, d, e, f, x, y, z);
+print("Hello world!");
+print(1, 1 + 1, "Hello World!", true, false);

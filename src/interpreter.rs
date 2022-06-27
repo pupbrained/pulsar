@@ -3,7 +3,10 @@ use {
         lexer::Token,
         parser::{Expr, Operator},
     },
-    std::collections::HashMap,
+    std::{
+        collections::HashMap,
+        fmt::{Display, Formatter},
+    },
 };
 
 pub struct Interpreter {
@@ -20,15 +23,15 @@ pub enum ValueType {
     Int(i64),
     String(String),
     Bool(bool),
-    // Fn(FnType),
+    Fn(FnType),
     Nothing,
 }
 
-// #[derive(Debug, Clone, PartialEq)]
-// pub enum FnType {
-// Builtin(BuiltinFn),
-// User(UserFn),
-// }
+#[derive(Debug, Clone, PartialEq)]
+pub enum FnType {
+    Builtin(BuiltinFn),
+    User(UserFn),
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BuiltinFn {
@@ -44,6 +47,39 @@ pub struct UserFn {
     pub args: Vec<String>,
     pub body: Vec<Expr>,
     pub return_type: Box<ValueType>,
+}
+
+impl Display for FnType {
+    fn fmt(&self, _f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FnType::Builtin(_f) => Ok(()),
+            FnType::User(_f) => Ok(()),
+        }
+    }
+}
+
+impl Display for BuiltinFn {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+
+impl Display for UserFn {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+
+impl Display for ValueType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ValueType::Int(i) => write!(f, "{}", i),
+            ValueType::String(s) => write!(f, "{}", s),
+            ValueType::Bool(b) => write!(f, "{}", b),
+            ValueType::Fn(_f) => Ok(()),
+            ValueType::Nothing => write!(f, "Nothing"),
+        }
+    }
 }
 
 impl Interpreter {
@@ -167,7 +203,13 @@ impl Interpreter {
                 }
                 _ => ValueType::Nothing,
             },
-            _ => ValueType::Nothing,
+            Expr::FnCall { name, args } => {
+                let mut args_vec = Vec::new();
+                for arg in args {
+                    args_vec.push(self.interpret_expr(arg));
+                }
+                self.call_fn(name, args_vec)
+            }
         }
     }
 
@@ -175,6 +217,26 @@ impl Interpreter {
         for expr in &self.exprs.clone() {
             self.interpret_expr(expr);
         }
-        println!("{:?}", self.state.globals);
+    }
+
+    pub fn call_fn(&mut self, name: &str, args: Vec<ValueType>) -> ValueType {
+        match name {
+            "print" => {
+                if args.len() > 1 {
+                    for arg in &args {
+                        if arg == &args[args.len() - 1] {
+                            print!("{}", arg);
+                        } else {
+                            print!("{}, ", arg);
+                        }
+                    }
+                    println!();
+                } else {
+                    println!("{}", args[0]);
+                }
+                ValueType::Nothing
+            }
+            _ => panic!("Undefined function: {}", name),
+        }
     }
 }

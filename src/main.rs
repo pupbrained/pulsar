@@ -19,9 +19,6 @@ fn read_file() -> String {
 fn main() {
     let lex: Vec<_> = Token::lexer(&read_file()).collect();
     let exprs: Vec<_> = Parser::new(lex).parse();
-    for expr in &exprs {
-        println!("{}", expr);
-    }
     let mut interpreter: Interpreter = Interpreter::new(exprs);
     interpreter.run();
 }
