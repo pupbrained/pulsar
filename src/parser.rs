@@ -83,7 +83,7 @@ impl Parser {
             let this = &tokens.clone();
             this.len() != 0
         } {
-            let (expr, tokens_new) = Parser::parse_expr(tokens, true);
+            let (expr, tokens_new) = Self::parse_expr(tokens, true);
             tokens = tokens_new;
             exprs.push(expr);
         }
@@ -91,13 +91,13 @@ impl Parser {
     }
 
     pub fn parse_expr<'a>(
-        mut tokens: &'a mut Peekable<Iter<'a, Token>>,
+        tokens: &'a mut Peekable<Iter<'a, Token>>,
         sc_check: bool,
     ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
         let (expr, tokens_new) = match tokens.next() {
             Some(Token::Identifier(ident)) => match tokens.next() {
                 Some(Token::SetVal) => {
-                    let (expr, tokens_new) = Parser::parse_expr(tokens, false);
+                    let (expr, tokens_new) = Self::parse_expr(tokens, false);
                     (
                         Expr::BinaryExpr {
                             op: Operator::SetVal,
@@ -107,38 +107,9 @@ impl Parser {
                         tokens_new,
                     )
                 }
-                Some(Token::LParen) => {
-                    let mut args = Vec::new();
-                    if tokens.peek() == Some(&&Token::RParen) {
-                        return (
-                            Expr::FnCall {
-                                name: ident.into(),
-                                args,
-                            },
-                            tokens,
-                        );
-                    };
-                    loop {
-                        let (expr, tokens_new) = Parser::parse_expr(tokens, false);
-                        args.push(expr);
-                        match tokens_new.next() {
-                            Some(Token::Comma) => (),
-                            Some(Token::RParen) => {
-                                return (
-                                    Expr::FnCall {
-                                        name: ident.into(),
-                                        args,
-                                    },
-                                    tokens_new,
-                                );
-                            }
-                            _ => panic!("Expected ',' or ')'"),
-                        }
-                        tokens = tokens_new;
-                    }
-                }
+                Some(Token::LParen) => Self::parse_fn_call(ident.to_string(), tokens),
                 Some(Token::Operator(op)) => {
-                    let (expr, tokens_new) = Parser::parse_expr(tokens, false);
+                    let (expr, tokens_new) = Self::parse_expr(tokens, false);
                     (
                         Expr::BinaryExpr {
                             op: Operator::from_str(op),
@@ -154,7 +125,7 @@ impl Parser {
                 Some(Token::Semicolon) => (Expr::Token(Token::Num(*num)), tokens),
                 Some(Token::Operator(op)) => {
                     tokens.next();
-                    let (expr, tokens_new) = Parser::parse_expr(tokens, false);
+                    let (expr, tokens_new) = Self::parse_expr(tokens, false);
                     match op.as_str() {
                         "+" => (
                             Expr::BinaryExpr {
@@ -221,6 +192,31 @@ impl Parser {
             }
         } else {
             (expr, tokens_new)
+        }
+    }
+
+    pub fn parse_fn_call<'a>(
+        ident: String,
+        tokens: &'a mut Peekable<Iter<'a, Token>>,
+    ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
+        let mut args = Vec::new();
+        if tokens.peek() == Some(&&Token::RParen) {
+            tokens.next();
+            (Expr::FnCall { name: ident, args }, tokens)
+        } else {
+            let (arg, tokens_new) = Self::parse_expr(tokens, false);
+            args.push(arg);
+            while tokens_new.peek() == Some(&&Token::Comma) {
+                tokens_new.next();
+                let (arg, tokens_new) = Self::parse_expr(tokens_new, false);
+                args.push(arg);
+            }
+            if tokens_new.peek() == Some(&&Token::RParen) {
+                tokens_new.next();
+                (Expr::FnCall { name: ident, args }, tokens_new)
+            } else {
+                panic!("Expected )");
+            }
         }
     }
 }
