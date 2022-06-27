@@ -127,7 +127,6 @@ impl Parser {
                 _ => (Expr::Token(Token::Identifier(ident.into())), tokens),
             },
             Some(Token::Num(num)) => match tokens.peek() {
-                Some(Token::Semicolon) => (Expr::Token(Token::Num(*num)), tokens),
                 Some(Token::Operator(op)) => {
                     tokens.next();
                     let (expr, tokens_new) = Self::parse_expr(tokens, false);
@@ -183,7 +182,7 @@ impl Parser {
                         _ => panic!("Expected operator"),
                     }
                 }
-                _ => panic!("Expected operator"),
+                _ => (Expr::Token(Token::Num(*num)), tokens),
             },
             Some(Token::Bool(bool)) => (Expr::Token(Token::Bool(*bool)), tokens),
             Some(Token::String(string)) => (Expr::Token(Token::String(string.into())), tokens),
