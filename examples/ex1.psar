@@ -7,4 +7,4 @@ c := b + 3;
 d := "hello!";
 e := d + "2";
 f := e + "3";
-print(a, b, c, d, e, x, y, z);
+print(a, b, c);
