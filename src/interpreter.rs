@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use {
     crate::{
         lexer::Token,
@@ -36,8 +38,7 @@ pub enum FnType {
 #[derive(Debug, Clone, PartialEq)]
 pub struct BuiltinFn {
     pub name: String,
-    pub args: Vec<String>,
-    pub body: Vec<Expr>,
+    pub args: Vec<ValueType>,
     pub return_type: Box<ValueType>,
 }
 
@@ -84,10 +85,17 @@ impl Display for ValueType {
 
 impl Interpreter {
     pub fn new(exprs: Vec<Expr>) -> Self {
+        let mut globals = HashMap::new();
+        globals.insert(
+            "print".to_string(),
+            ValueType::Fn(FnType::Builtin(BuiltinFn {
+                name: "print".to_string(),
+                args: vec![ValueType::String("".to_string())],
+                return_type: Box::new(ValueType::Nothing),
+            })),
+        );
         Self {
-            state: State {
-                globals: HashMap::new(),
-            },
+            state: State { globals },
             exprs,
         }
     }
@@ -208,7 +216,7 @@ impl Interpreter {
                 for arg in args {
                     args_vec.push(self.interpret_expr(arg));
                 }
-                self.call_fn(name, args_vec)
+                self.call_fn(name)
             }
         }
     }
@@ -219,23 +227,33 @@ impl Interpreter {
         }
     }
 
-    pub fn call_fn(&mut self, name: &str, args: Vec<ValueType>) -> ValueType {
-        match name {
-            "print" => {
-                if args.len() > 1 {
-                    for arg in &args {
-                        if arg == &args[args.len() - 1] {
-                            print!("{}", arg);
+    pub fn call_fn(&mut self, name: &str) -> ValueType {
+        match self.state.globals.get(name) {
+            Some(key) => match key {
+                ValueType::Fn(FnType::Builtin(BuiltinFn {
+                    name,
+                    return_type,
+                    args,
+                })) => match name.as_str() {
+                    "print" => {
+                        if args.len() > 1 {
+                            for arg in args {
+                                if arg == &args[args.len() - 1] {
+                                    print!("{}", arg);
+                                } else {
+                                    print!("{}, ", arg);
+                                }
+                            }
+                            println!();
                         } else {
-                            print!("{}, ", arg);
+                            println!("{}", args[0]);
                         }
+                        return_type.deref().to_owned()
                     }
-                    println!();
-                } else {
-                    println!("{}", args[0]);
-                }
-                ValueType::Nothing
-            }
+                    _ => panic!("Not a function"),
+                },
+                _ => panic!("Not a function"),
+            },
             _ => panic!("Undefined function: {}", name),
         }
     }
