@@ -279,7 +279,7 @@ impl Parser {
     ) -> (Vec<Expr>, &'a mut Peekable<Iter<'a, Token>>) {
         let mut exprs = Vec::new();
         loop {
-            let (expr, tokens_new) = Self::parse_expr(tokens, false);
+            let (expr, tokens_new) = Self::parse_expr(tokens, true);
             exprs.push(expr);
             match tokens_new.peek() {
                 Some(Token::RBrace) => break,
