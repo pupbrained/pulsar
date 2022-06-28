@@ -210,6 +210,10 @@ impl Interpreter {
                 }
                 self.call_fn(name, args_vec)
             }
+            Expr::FnDef { name, args } => {
+                let mut args_vec = Vec::new();
+                ValueType::Nothing
+            }
         }
     }
 
