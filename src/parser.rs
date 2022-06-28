@@ -59,6 +59,10 @@ pub enum Expr {
         name: String,
         args: Vec<Expr>,
     },
+    FnDef {
+        name: String,
+        args: HashMap<String, Expr>,
+    },
 }
 
 impl Display for Expr {
@@ -67,6 +71,7 @@ impl Display for Expr {
             Expr::Token(t) => write!(f, "{}", t),
             Expr::BinaryExpr { op, lhs, rhs } => write!(f, "{} {} {}", lhs, op, rhs),
             Expr::FnCall { name, args } => write!(f, "{}({:?})", name, args),
+            Expr::FnDef { name, args } => write!(f, "func {}({:?})", name, args),
         }
     }
 }
@@ -189,17 +194,17 @@ impl Parser {
             Some(Token::Func) => match tokens.next() {
                 Some(Token::Identifier(ident)) => match tokens.next() {
                     Some(Token::LParen) => {
+                        let mut vals = HashMap::new();
                         if tokens.peek() == Some(&&Token::RParen) {
                             tokens.next();
                             (
-                                Expr::FnCall {
+                                Expr::FnDef {
                                     name: ident.to_string(),
-                                    args,
+                                    args: vals,
                                 },
                                 tokens,
                             )
                         } else {
-                            let vals = HashMap::new();
                             loop {
                                 match tokens.peek() {
                                     Some(Token::Type(t)) => {
@@ -209,7 +214,7 @@ impl Parser {
                                                 tokens.next();
                                                 vals.insert(
                                                     ident.to_string(),
-                                                    Expr::Token(Token::Type(*t)),
+                                                    Expr::Token(Token::Type(t.clone())),
                                                 );
                                             }
                                             _ => panic!("Expected identifier"),
@@ -217,20 +222,19 @@ impl Parser {
                                     }
                                     _ => panic!("Expected type"),
                                 }
-                                match tokens_new.next() {
+                                match tokens.next() {
                                     Some(Token::Comma) => (),
                                     Some(Token::RParen) => {
                                         return (
-                                            Expr::FnCall {
+                                            Expr::FnDef {
                                                 name: ident.to_string(),
-                                                args,
+                                                args: vals,
                                             },
-                                            tokens_new,
+                                            tokens,
                                         )
                                     }
                                     _ => panic!("Expect comma, or ')'"),
                                 };
-                                tokens = tokens_new;
                             }
                         }
                     }
