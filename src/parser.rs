@@ -282,26 +282,4 @@ impl Parser {
             }
         }
     }
-
-    pub fn parse_fn_def<'a>(
-        ident: String,
-        mut tokens: &'a mut Peekable<Iter<'a, Token>>,
-    ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
-        let mut args = Vec::new();
-        if tokens.peek() == Some(&&Token::RParen) {
-            tokens.next();
-            (Expr::FnCall { name: ident, args }, tokens)
-        } else {
-            loop {
-                let (arg, tokens_new) = Self::parse_expr(tokens, false);
-                args.push(arg);
-                match tokens_new.next() {
-                    Some(Token::Comma) => (),
-                    Some(Token::RParen) => return (Expr::FnCall { name: ident, args }, tokens_new),
-                    _ => panic!("Expect comma, or ')'"),
-                };
-                tokens = tokens_new;
-            }
-        }
-    }
 }
