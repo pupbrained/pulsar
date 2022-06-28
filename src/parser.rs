@@ -191,57 +191,7 @@ impl Parser {
             },
             Some(Token::Bool(bool)) => (Expr::Token(Token::Bool(*bool)), tokens),
             Some(Token::String(string)) => (Expr::Token(Token::String(string.into())), tokens),
-            Some(Token::Func) => match tokens.next() {
-                Some(Token::Identifier(ident)) => match tokens.next() {
-                    Some(Token::LParen) => {
-                        let mut vals = HashMap::new();
-                        if tokens.peek() == Some(&&Token::RParen) {
-                            tokens.next();
-                            (
-                                Expr::FnDef {
-                                    name: ident.to_string(),
-                                    args: vals,
-                                },
-                                tokens,
-                            )
-                        } else {
-                            loop {
-                                match tokens.peek() {
-                                    Some(Token::Type(t)) => {
-                                        tokens.next();
-                                        match tokens.peek() {
-                                            Some(Token::Identifier(ident)) => {
-                                                tokens.next();
-                                                vals.insert(
-                                                    ident.to_string(),
-                                                    Expr::Token(Token::Type(t.clone())),
-                                                );
-                                            }
-                                            _ => panic!("Expected identifier"),
-                                        }
-                                    }
-                                    _ => panic!("Expected type"),
-                                }
-                                match tokens.next() {
-                                    Some(Token::Comma) => (),
-                                    Some(Token::RParen) => {
-                                        return (
-                                            Expr::FnDef {
-                                                name: ident.to_string(),
-                                                args: vals,
-                                            },
-                                            tokens,
-                                        )
-                                    }
-                                    _ => panic!("Expect comma, or ')'"),
-                                };
-                            }
-                        }
-                    }
-                    _ => panic!("Expected '('"),
-                },
-                _ => panic!("Expected identifier"),
-            },
+            Some(Token::Func) => Self::parse_fn_def(tokens),
             _ => (Expr::Token(Token::Error), tokens),
         };
         if sc_check {
@@ -252,6 +202,62 @@ impl Parser {
             }
         } else {
             (expr, tokens_new)
+        }
+    }
+
+    pub fn parse_fn_def<'a>(
+        tokens: &'a mut Peekable<Iter<'a, Token>>,
+    ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
+        match tokens.next() {
+            Some(Token::Identifier(ident)) => match tokens.next() {
+                Some(Token::LParen) => {
+                    let mut vals = HashMap::new();
+                    if tokens.peek() == Some(&&Token::RParen) {
+                        tokens.next();
+                        (
+                            Expr::FnDef {
+                                name: ident.to_string(),
+                                args: vals,
+                            },
+                            tokens,
+                        )
+                    } else {
+                        loop {
+                            match tokens.peek() {
+                                Some(Token::Type(t)) => {
+                                    tokens.next();
+                                    match tokens.peek() {
+                                        Some(Token::Identifier(ident)) => {
+                                            tokens.next();
+                                            vals.insert(
+                                                ident.to_string(),
+                                                Expr::Token(Token::Type(t.clone())),
+                                            );
+                                        }
+                                        _ => panic!("Expected identifier"),
+                                    }
+                                }
+                                _ => panic!("Expected type"),
+                            }
+                            match tokens.next() {
+                                Some(Token::Comma) => (),
+                                Some(Token::RParen) => {
+                                    return (
+                                        Expr::FnDef {
+                                            name: ident.to_string(),
+                                            args: vals,
+                                        },
+                                        tokens,
+                                    )
+                                }
+                                _ => panic!("Expect comma, or ')'"),
+                            };
+                        }
+                    }
+                }
+                _ => panic!("Expected '('"),
+            },
+            _ => panic!("Expected identifier"),
         }
     }
 
