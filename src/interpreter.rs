@@ -50,7 +50,7 @@ pub struct UserFn {
 }
 
 impl Display for FnType {
-    fn fmt(&self, _f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut Formatter) -> std::fmt::Result {
         match self {
             FnType::Builtin(_f) => Ok(()),
             FnType::User(_f) => Ok(()),
@@ -59,19 +59,19 @@ impl Display for FnType {
 }
 
 impl Display for BuiltinFn {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{}", self.name)
     }
 }
 
 impl Display for UserFn {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{}", self.name)
     }
 }
 
 impl Display for ValueType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
             ValueType::Int(i) => write!(f, "{}", i),
             ValueType::String(s) => write!(f, "{}", s),
@@ -210,10 +210,7 @@ impl Interpreter {
                 }
                 self.call_fn(name, args_vec)
             }
-            Expr::FnDef { name, args } => {
-                let mut args_vec = Vec::new();
-                ValueType::Nothing
-            }
+            Expr::FnDef { name, args } => ValueType::Nothing,
         }
     }
 

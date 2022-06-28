@@ -62,6 +62,7 @@ pub enum Expr {
     FnDef {
         name: String,
         args: HashMap<String, Expr>,
+        body: Vec<Expr>,
     },
 }
 
@@ -71,7 +72,9 @@ impl Display for Expr {
             Expr::Token(t) => write!(f, "{}", t),
             Expr::BinaryExpr { op, lhs, rhs } => write!(f, "{} {} {}", lhs, op, rhs),
             Expr::FnCall { name, args } => write!(f, "{}({:?})", name, args),
-            Expr::FnDef { name, args } => write!(f, "func {}({:?})", name, args),
+            Expr::FnDef { name, args, body } => {
+                write!(f, "func {}({:?}) {{{:?}}}", name, args, body)
+            }
         }
     }
 }
@@ -212,15 +215,9 @@ impl Parser {
             Some(Token::Identifier(ident)) => match tokens.next() {
                 Some(Token::LParen) => {
                     let mut vals = HashMap::new();
+                    let mut return_type: Option<String> = None;
                     if tokens.peek() == Some(&&Token::RParen) {
                         tokens.next();
-                        (
-                            Expr::FnDef {
-                                name: ident.to_string(),
-                                args: vals,
-                            },
-                            tokens,
-                        )
                     } else {
                         loop {
                             match tokens.peek() {
@@ -242,23 +239,55 @@ impl Parser {
                             match tokens.next() {
                                 Some(Token::Comma) => (),
                                 Some(Token::RParen) => {
-                                    return (
-                                        Expr::FnDef {
-                                            name: ident.to_string(),
-                                            args: vals,
-                                        },
-                                        tokens,
-                                    )
+                                    break;
                                 }
-                                _ => panic!("Expect comma, or ')'"),
+                                _ => panic!("Expected comma, or ')'"),
                             };
                         }
                     }
+                    let (body, tokens_new) = match tokens.next() {
+                        Some(Token::Return) => {
+                            return_type = match tokens.next() {
+                                Some(Token::Type(t)) => Some(t.into()),
+                                _ => panic!("Expected type"),
+                            };
+                            match tokens.next() {
+                                Some(Token::LBrace) => Self::handle_func_block(tokens),
+                                _ => panic!("Expected brace"),
+                            }
+                        }
+                        Some(Token::LBrace) => Self::handle_func_block(tokens),
+                        _ => panic!("Expected a return statement or brace"),
+                    };
+                    return (
+                        Expr::FnDef {
+                            name: ident.into(),
+                            args: vals,
+                            body,
+                        },
+                        tokens_new,
+                    );
                 }
                 _ => panic!("Expected '('"),
             },
             _ => panic!("Expected identifier"),
         }
+    }
+
+    pub fn handle_func_block<'a>(
+        tokens: &'a mut Peekable<Iter<'a, Token>>,
+    ) -> (Vec<Expr>, &'a mut Peekable<Iter<'a, Token>>) {
+        let mut exprs = Vec::new();
+        loop {
+            let (expr, tokens_new) = Self::parse_expr(tokens, false);
+            exprs.push(expr);
+            match tokens_new.peek() {
+                Some(Token::RBrace) => break,
+                _ => (),
+            };
+            tokens = tokens_new;
+        }
+        return (exprs, tokens);
     }
 
     pub fn parse_fn_call<'a>(

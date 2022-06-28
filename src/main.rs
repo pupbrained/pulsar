@@ -2,6 +2,7 @@ mod builtins;
 mod interpreter;
 mod lexer;
 mod parser;
+
 use {
     interpreter::Interpreter,
     lexer::Token,
@@ -11,7 +12,7 @@ use {
 };
 
 fn read_file() -> String {
-    let mut file = File::open("examples/ex1.psar").unwrap();
+    let mut file = File::open("../examples/ex1.psar").unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
     contents
