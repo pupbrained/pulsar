@@ -275,7 +275,7 @@ impl Parser {
     }
 
     pub fn handle_func_block<'a>(
-        tokens: &'a mut Peekable<Iter<'a, Token>>,
+        mut tokens: &'a mut Peekable<Iter<'a, Token>>,
     ) -> (Vec<Expr>, &'a mut Peekable<Iter<'a, Token>>) {
         let mut exprs = Vec::new();
         loop {

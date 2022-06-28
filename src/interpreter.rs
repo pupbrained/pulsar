@@ -210,7 +210,7 @@ impl Interpreter {
                 }
                 self.call_fn(name, args_vec)
             }
-            Expr::FnDef { name, args } => ValueType::Nothing,
+            Expr::FnDef { .. } => ValueType::Nothing,
         }
     }
 
