@@ -200,27 +200,22 @@ impl Parser {
                             )
                         } else {
                             let vals = HashMap::new();
-                            let type_val = tokens.peek();
                             loop {
-                                if type_val == Some(&&Token::Type) {
-                                    tokens.next();
-                                    if tokens.peek() == Some(&&Token::Identifier(ident.to_string()))
-                                    {
+                                match tokens.peek() {
+                                    Some(Token::Type(t)) => {
                                         tokens.next();
-                                        if tokens.peek() == Some(&&Token::SetVal) {
-                                            tokens.next();
-                                            let (expr, tokens_new) =
-                                                Self::parse_expr(tokens, false);
-                                            vals.insert(ident.to_string(), expr);
-                                            tokens = tokens_new;
-                                        } else {
-                                            panic!("Expected set val");
+                                        match tokens.peek() {
+                                            Some(Token::Identifier(ident)) => {
+                                                tokens.next();
+                                                vals.insert(
+                                                    ident.to_string(),
+                                                    Expr::Token(Token::Type(*t)),
+                                                );
+                                            }
+                                            _ => panic!("Expected identifier"),
                                         }
-                                    } else {
-                                        panic!("Expected identifier");
                                     }
-                                } else {
-                                    panic!("Expected type");
+                                    _ => panic!("Expected type"),
                                 }
                                 match tokens_new.next() {
                                     Some(Token::Comma) => (),
