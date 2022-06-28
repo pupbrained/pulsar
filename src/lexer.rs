@@ -41,6 +41,15 @@ pub enum Token {
     #[token(",")]
     Comma,
 
+    #[token("func")]
+    Func,
+
+    #[token("->")]
+    Return,
+
+    #[regex("bool|int|string", |lex| lex.slice().parse())]
+    Type(String),
+
     #[regex(r"!=|[=+\-*/]", |lex| lex.slice().parse())]
     Operator(String),
 
@@ -53,9 +62,9 @@ impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Token::SetVal => write!(f, ":="),
-            Token::String(s) => write!(f, "\"{}\"", s),
+            Token::String(s) => write!(f, "{}", s),
             Token::Identifier(s) => write!(f, "{}", s),
-            Token::Num(n) => write!(f, "{}", n),
+            Token::Num(i) => write!(f, "{}", i),
             Token::Bool(b) => write!(f, "{}", b),
             Token::LParen => write!(f, "("),
             Token::RParen => write!(f, ")"),
@@ -65,6 +74,9 @@ impl Display for Token {
             Token::RBracket => write!(f, "]"),
             Token::Semicolon => write!(f, ";"),
             Token::Comma => write!(f, ","),
+            Token::Func => write!(f, "func"),
+            Token::Return => write!(f, "->"),
+            Token::Type(s) => write!(f, "{}", s),
             Token::Operator(s) => write!(f, "{}", s),
             Token::Error => write!(f, "Error"),
         }

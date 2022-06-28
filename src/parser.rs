@@ -1,4 +1,4 @@
-use std::{fmt::Display, iter::Peekable, slice::Iter};
+use std::{collections::HashMap, fmt::Display, iter::Peekable, slice::Iter};
 
 use crate::lexer::Token;
 
@@ -186,6 +186,63 @@ impl Parser {
             },
             Some(Token::Bool(bool)) => (Expr::Token(Token::Bool(*bool)), tokens),
             Some(Token::String(string)) => (Expr::Token(Token::String(string.into())), tokens),
+            Some(Token::Func) => match tokens.next() {
+                Some(Token::Identifier(ident)) => match tokens.next() {
+                    Some(Token::LParen) => {
+                        if tokens.peek() == Some(&&Token::RParen) {
+                            tokens.next();
+                            (
+                                Expr::FnCall {
+                                    name: ident.to_string(),
+                                    args,
+                                },
+                                tokens,
+                            )
+                        } else {
+                            let vals = HashMap::new();
+                            let type_val = tokens.peek();
+                            loop {
+                                if type_val == Some(&&Token::Type) {
+                                    tokens.next();
+                                    if tokens.peek() == Some(&&Token::Identifier(ident.to_string()))
+                                    {
+                                        tokens.next();
+                                        if tokens.peek() == Some(&&Token::SetVal) {
+                                            tokens.next();
+                                            let (expr, tokens_new) =
+                                                Self::parse_expr(tokens, false);
+                                            vals.insert(ident.to_string(), expr);
+                                            tokens = tokens_new;
+                                        } else {
+                                            panic!("Expected set val");
+                                        }
+                                    } else {
+                                        panic!("Expected identifier");
+                                    }
+                                } else {
+                                    panic!("Expected type");
+                                }
+                                match tokens_new.next() {
+                                    Some(Token::Comma) => (),
+                                    Some(Token::RParen) => {
+                                        return (
+                                            Expr::FnCall {
+                                                name: ident.to_string(),
+                                                args,
+                                            },
+                                            tokens_new,
+                                        )
+                                    }
+                                    _ => panic!("Expect comma, or ')'"),
+                                };
+                                tokens = tokens_new;
+                            }
+                        }
+                    }
+                    _ => panic!("Expected '('"),
+                },
+                _ => panic!("Expected identifier"),
+            },
             _ => (Expr::Token(Token::Error), tokens),
         };
         if sc_check {

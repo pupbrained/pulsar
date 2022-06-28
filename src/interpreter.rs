@@ -84,16 +84,10 @@ impl Display for ValueType {
 
 impl Interpreter {
     pub fn new(exprs: Vec<Expr>) -> Self {
-        let mut globals = HashMap::new();
-        globals.insert(
-            "print".to_string(),
-            ValueType::Fn(FnType::Builtin(BuiltinFn {
-                name: "print".to_string(),
-                return_type: Box::new(ValueType::Nothing),
-            })),
-        );
         Self {
-            state: State { globals },
+            state: State {
+                globals: builtins::make_builtins(),
+            },
             exprs,
         }
     }

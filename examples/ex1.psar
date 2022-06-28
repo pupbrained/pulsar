@@ -7,6 +7,13 @@ c := b + 3;
 d := "hello!";
 e := d + "2";
 f := e + "3";
-print(a, b, c, d, e, f, x, y, z);
-print("Hello world!");
-print(1, 1 + 1, "Hello World!", true, false);
+println(a, b, c, d, e, f, x, y, z);
+println("Hello world!");
+println(1, 1 + 1, "Hello World!", true, false);
+
+func say_hi() -> bool {
+  println("Hi");
+  ret true;
+}
+
+say_hi();
