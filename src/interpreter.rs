@@ -17,7 +17,7 @@ pub struct Interpreter {
 }
 
 pub struct State {
-    pub globals: HashMap<String, ValueType>,
+    pub toplevel_scope: HashMap<String, ValueType>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -86,21 +86,27 @@ impl Interpreter {
     pub fn new(exprs: Vec<Expr>) -> Self {
         Self {
             state: State {
-                globals: builtins::make_builtins(),
+                toplevel_scope: builtins::make_builtins(),
             },
             exprs,
         }
     }
 
-    pub fn interpret_expr(&mut self, expr: &Expr) -> ValueType {
+    pub fn interpret_expr(
+        &mut self,
+        expr: &Expr,
+        scope: &mut HashMap<String, ValueType>,
+    ) -> ValueType {
         match expr {
             Expr::BinaryExpr {
                 op: Operator::SetVal,
                 lhs,
                 rhs,
             } => {
-                let right_side = self.interpret_expr(rhs);
-                self.state.globals.insert(lhs.to_string(), right_side);
+                let right_side = self.interpret_expr(rhs, scope);
+                self.state
+                    .toplevel_scope
+                    .insert(lhs.to_string(), right_side);
                 ValueType::Nothing
             }
             Expr::BinaryExpr {
@@ -108,8 +114,8 @@ impl Interpreter {
                 lhs,
                 rhs,
             } => {
-                let left_side = self.interpret_expr(lhs);
-                let right_side = self.interpret_expr(rhs);
+                let left_side = self.interpret_expr(lhs, scope);
+                let right_side = self.interpret_expr(rhs, scope);
                 match (left_side, right_side) {
                     (ValueType::Int(left), ValueType::Int(right)) => ValueType::Int(left + right),
                     (ValueType::String(left), ValueType::String(right)) => {
@@ -123,8 +129,8 @@ impl Interpreter {
                 lhs,
                 rhs,
             } => {
-                let left_side = self.interpret_expr(lhs);
-                let right_side = self.interpret_expr(rhs);
+                let left_side = self.interpret_expr(lhs, scope);
+                let right_side = self.interpret_expr(rhs, scope);
                 match (left_side, right_side) {
                     (ValueType::Int(left), ValueType::Int(right)) => ValueType::Int(left - right),
                     _ => panic!("Cannot subtract non-numeric values"),
@@ -135,8 +141,8 @@ impl Interpreter {
                 lhs,
                 rhs,
             } => {
-                let left_side = self.interpret_expr(lhs);
-                let right_side = self.interpret_expr(rhs);
+                let left_side = self.interpret_expr(lhs, scope);
+                let right_side = self.interpret_expr(rhs, scope);
                 match (left_side, right_side) {
                     (ValueType::Int(left), ValueType::Int(right)) => ValueType::Int(left * right),
                     _ => panic!("Cannot multiply non-numeric values"),
@@ -147,8 +153,8 @@ impl Interpreter {
                 lhs,
                 rhs,
             } => {
-                let left_side = self.interpret_expr(lhs);
-                let right_side = self.interpret_expr(rhs);
+                let left_side = self.interpret_expr(lhs, scope);
+                let right_side = self.interpret_expr(rhs, scope);
                 match (left_side, right_side) {
                     (ValueType::Int(left), ValueType::Int(right)) => ValueType::Int(left / right),
                     _ => panic!("Cannot divide non-numeric values"),
@@ -159,8 +165,8 @@ impl Interpreter {
                 lhs,
                 rhs,
             } => {
-                let left_side = self.interpret_expr(lhs);
-                let right_side = self.interpret_expr(rhs);
+                let left_side = self.interpret_expr(lhs, scope);
+                let right_side = self.interpret_expr(rhs, scope);
                 match (left_side, right_side) {
                     (ValueType::Int(left), ValueType::Int(right)) => ValueType::Bool(left == right),
                     (ValueType::String(left), ValueType::String(right)) => {
@@ -177,8 +183,8 @@ impl Interpreter {
                 lhs,
                 rhs,
             } => {
-                let left_side = self.interpret_expr(lhs);
-                let right_side = self.interpret_expr(rhs);
+                let left_side = self.interpret_expr(lhs, scope);
+                let right_side = self.interpret_expr(rhs, scope);
                 match (left_side, right_side) {
                     (ValueType::Int(left), ValueType::Int(right)) => ValueType::Bool(left != right),
                     (ValueType::String(left), ValueType::String(right)) => {
@@ -195,7 +201,7 @@ impl Interpreter {
                 Token::String(x) => ValueType::String(x.to_string()),
                 Token::Bool(x) => ValueType::Bool(*x),
                 Token::Identifier(x) => {
-                    if let Some(val) = self.state.globals.get(x) {
+                    if let Some(val) = self.state.toplevel_scope.get(x) {
                         val.clone()
                     } else {
                         panic!("Undefined variable: {}", x)
@@ -206,23 +212,28 @@ impl Interpreter {
             Expr::FnCall { name, args } => {
                 let mut args_vec = Vec::new();
                 for arg in args {
-                    args_vec.push(self.interpret_expr(arg));
+                    args_vec.push(self.interpret_expr(arg, scope));
                 }
                 self.call_fn(name, args_vec)
             }
-            Expr::FnDef { .. } => ValueType::Nothing,
+            Expr::FnDef {
+                name,
+                args,
+                body,
+                return_type,
+            } => todo!(),
             Expr::Return { .. } => todo!(),
         }
     }
 
     pub fn run(&mut self) {
         for expr in &self.exprs.clone() {
-            self.interpret_expr(expr);
+            self.interpret_expr(expr, &mut self.state.toplevel_scope);
         }
     }
 
     pub fn call_fn(&mut self, name: &str, args: Vec<ValueType>) -> ValueType {
-        match self.state.globals.get(name) {
+        match self.state.toplevel_scope.get(name) {
             Some(key) => match key {
                 ValueType::Fn(FnType::Builtin(BuiltinFn {
                     name, return_type, ..

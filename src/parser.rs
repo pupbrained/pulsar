@@ -114,7 +114,7 @@ impl Parser {
 
     pub fn parse_expr<'a>(
         tokens: &'a mut Peekable<Iter<'a, Token>>,
-        sc_check: bool,
+        mut sc_check: bool,
     ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
         let (expr, tokens_new) = match tokens.next() {
             Some(Token::Return) => {
@@ -217,7 +217,10 @@ impl Parser {
             },
             Some(Token::Bool(bool)) => (Expr::Token(Token::Bool(*bool)), tokens),
             Some(Token::String(string)) => (Expr::Token(Token::String(string.into())), tokens),
-            Some(Token::Func) => Self::parse_fn_def(tokens),
+            Some(Token::Func) => {
+                sc_check = false;
+                Self::parse_fn_def(tokens)
+            }
             _ => (Expr::Token(Token::Error), tokens),
         };
         if sc_check {
