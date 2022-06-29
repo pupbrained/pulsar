@@ -92,11 +92,7 @@ impl Interpreter {
         }
     }
 
-    pub fn interpret_expr(
-        &mut self,
-        expr: &Expr,
-        scope: &mut HashMap<String, ValueType>,
-    ) -> ValueType {
+    pub fn interpret_expr(&self, expr: &Expr, scope: &mut HashMap<String, ValueType>) -> ValueType {
         match expr {
             Expr::BinaryExpr {
                 op: Operator::SetVal,
@@ -104,9 +100,7 @@ impl Interpreter {
                 rhs,
             } => {
                 let right_side = self.interpret_expr(rhs, scope);
-                self.state
-                    .toplevel_scope
-                    .insert(lhs.to_string(), right_side);
+                scope.insert(lhs.to_string(), right_side);
                 ValueType::Nothing
             }
             Expr::BinaryExpr {
@@ -201,7 +195,7 @@ impl Interpreter {
                 Token::String(x) => ValueType::String(x.to_string()),
                 Token::Bool(x) => ValueType::Bool(*x),
                 Token::Identifier(x) => {
-                    if let Some(val) = self.state.toplevel_scope.get(x) {
+                    if let Some(val) = scope.get(x) {
                         val.clone()
                     } else {
                         panic!("Undefined variable: {}", x)
@@ -214,7 +208,7 @@ impl Interpreter {
                 for arg in args {
                     args_vec.push(self.interpret_expr(arg, scope));
                 }
-                self.call_fn(name, args_vec)
+                self.call_fn(name, args_vec, scope)
             }
             Expr::FnDef {
                 name,
@@ -227,13 +221,18 @@ impl Interpreter {
     }
 
     pub fn run(&mut self) {
-        for expr in &self.exprs.clone() {
+        for expr in &self.exprs {
             self.interpret_expr(expr, &mut self.state.toplevel_scope);
         }
     }
 
-    pub fn call_fn(&mut self, name: &str, args: Vec<ValueType>) -> ValueType {
-        match self.state.toplevel_scope.get(name) {
+    pub fn call_fn(
+        &self,
+        name: &str,
+        args: Vec<ValueType>,
+        scope: &mut HashMap<String, ValueType>,
+    ) -> ValueType {
+        match scope.get(name) {
             Some(key) => match key {
                 ValueType::Fn(FnType::Builtin(BuiltinFn {
                     name, return_type, ..
