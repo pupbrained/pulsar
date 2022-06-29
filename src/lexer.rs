@@ -8,7 +8,7 @@ pub enum Token {
     #[regex(r#""([^"\\]|\\t|\\u|\\n|\\")*""#, |lex| lex.slice().parse::<String>().unwrap().substring(1, lex.slice().len() - 1).parse())]
     String(String),
 
-    #[regex("[a-zA-AZ]+", |lex| lex.slice().parse())]
+    #[regex("[a-zA-AZ_]+", |lex| lex.slice().parse())]
     Identifier(String),
 
     #[regex("[0-9]+", |lex| lex.slice().parse())]

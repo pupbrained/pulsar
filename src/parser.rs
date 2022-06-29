@@ -268,7 +268,7 @@ impl Parser {
                         tokens_new,
                     );
                 }
-                _ => panic!("Expected '('"),
+                _ => panic!("Expected '(', got {:?}", tokens.peek()),
             },
             _ => panic!("Expected identifier"),
         }
@@ -284,8 +284,8 @@ impl Parser {
             match tokens_new.peek() {
                 Some(Token::RBrace) => {
                     tokens_new.next();
-                    return (exprs, tokens_new)
-                },
+                    return (exprs, tokens_new);
+                }
                 _ => (),
             };
             tokens = tokens_new;
