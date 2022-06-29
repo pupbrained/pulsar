@@ -45,6 +45,9 @@ pub enum Token {
     Func,
 
     #[token("->")]
+    ReturnType,
+
+    #[token("return")]
     Return,
 
     #[regex("bool|int|string", |lex| lex.slice().parse())]
@@ -75,7 +78,8 @@ impl Display for Token {
             Token::Semicolon => write!(f, ";"),
             Token::Comma => write!(f, ","),
             Token::Func => write!(f, "func"),
-            Token::Return => write!(f, "->"),
+            Token::ReturnType => write!(f, "->"),
+            Token::Return => write!(f, "return"),
             Token::Type(s) => write!(f, "{}", s),
             Token::Operator(s) => write!(f, "{}", s),
             Token::Error => write!(f, "Error"),

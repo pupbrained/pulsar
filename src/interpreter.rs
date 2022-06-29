@@ -211,6 +211,7 @@ impl Interpreter {
                 self.call_fn(name, args_vec)
             }
             Expr::FnDef { .. } => ValueType::Nothing,
+            Expr::Return { .. } => todo!(),
         }
     }
 

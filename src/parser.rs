@@ -63,6 +63,10 @@ pub enum Expr {
         name: String,
         args: HashMap<String, Expr>,
         body: Vec<Expr>,
+        return_type: Option<String>,
+    },
+    Return {
+        inner: Box<Expr>,
     },
 }
 
@@ -72,9 +76,19 @@ impl Display for Expr {
             Expr::Token(t) => write!(f, "{}", t),
             Expr::BinaryExpr { op, lhs, rhs } => write!(f, "{} {} {}", lhs, op, rhs),
             Expr::FnCall { name, args } => write!(f, "{}({:?})", name, args),
-            Expr::FnDef { name, args, body } => {
-                write!(f, "func {}({:?}) {{{:?}}}", name, args, body)
+            Expr::FnDef {
+                name,
+                args,
+                body,
+                return_type,
+            } => {
+                write!(
+                    f,
+                    "func {}({:?}) {{{:?}}} -> {:?}",
+                    name, args, body, return_type
+                )
             }
+            Expr::Return { inner } => write!(f, "return {}", inner),
         }
     }
 }
@@ -103,6 +117,15 @@ impl Parser {
         sc_check: bool,
     ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
         let (expr, tokens_new) = match tokens.next() {
+            Some(Token::Return) => {
+                let (expr, tokens_new) = Self::parse_expr(tokens, false);
+                (
+                    Expr::Return {
+                        inner: Box::new(expr),
+                    },
+                    tokens_new,
+                )
+            }
             Some(Token::Identifier(ident)) => match tokens.peek() {
                 Some(Token::SetVal) => {
                     tokens.next();
@@ -246,7 +269,7 @@ impl Parser {
                         }
                     }
                     let (body, tokens_new) = match tokens.next() {
-                        Some(Token::Return) => {
+                        Some(Token::ReturnType) => {
                             return_type = match tokens.next() {
                                 Some(Token::Type(t)) => Some(t.into()),
                                 _ => panic!("Expected type"),
@@ -264,6 +287,7 @@ impl Parser {
                             name: ident.into(),
                             args: vals,
                             body,
+                            return_type,
                         },
                         tokens_new,
                     );
