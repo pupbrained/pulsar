@@ -282,12 +282,14 @@ impl Parser {
             let (expr, tokens_new) = Self::parse_expr(tokens, true);
             exprs.push(expr);
             match tokens_new.peek() {
-                Some(Token::RBrace) => break,
+                Some(Token::RBrace) => {
+                    tokens_new.next();
+                    return (exprs, tokens_new)
+                },
                 _ => (),
             };
             tokens = tokens_new;
         }
-        return (exprs, tokens);
     }
 
     pub fn parse_fn_call<'a>(
