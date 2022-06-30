@@ -82,6 +82,149 @@ impl Display for ValueType {
     }
 }
 
+pub fn call_fn(
+    name: &str,
+    args: Vec<ValueType>,
+    scope: &mut HashMap<String, ValueType>,
+) -> ValueType {
+    match scope.get(name) {
+        Some(key) => match key {
+            ValueType::Fn(FnType::Builtin(BuiltinFn {
+                name, return_type, ..
+            })) => builtins::call_builtin(name, args, return_type.deref().to_owned()),
+            _ => panic!("Not a function"),
+        },
+        _ => panic!("Undefined function: {}", name),
+    }
+}
+
+pub fn interpret_expr(expr: &Expr, scope: &mut HashMap<String, ValueType>) -> ValueType {
+    match expr {
+        Expr::BinaryExpr {
+            op: Operator::SetVal,
+            lhs,
+            rhs,
+        } => {
+            let right_side = interpret_expr(rhs, scope);
+            scope.insert(lhs.to_string(), right_side);
+            ValueType::Nothing
+        }
+        Expr::BinaryExpr {
+            op: Operator::Add,
+            lhs,
+            rhs,
+        } => {
+            let left_side = interpret_expr(lhs, scope);
+            let right_side = interpret_expr(rhs, scope);
+            match (left_side, right_side) {
+                (ValueType::Int(left), ValueType::Int(right)) => ValueType::Int(left + right),
+                (ValueType::String(left), ValueType::String(right)) => {
+                    ValueType::String(left + &right)
+                }
+                _ => panic!("Cannot add non-numeric values"),
+            }
+        }
+        Expr::BinaryExpr {
+            op: Operator::Sub,
+            lhs,
+            rhs,
+        } => {
+            let left_side = interpret_expr(lhs, scope);
+            let right_side = interpret_expr(rhs, scope);
+            match (left_side, right_side) {
+                (ValueType::Int(left), ValueType::Int(right)) => ValueType::Int(left - right),
+                _ => panic!("Cannot subtract non-numeric values"),
+            }
+        }
+        Expr::BinaryExpr {
+            op: Operator::Mul,
+            lhs,
+            rhs,
+        } => {
+            let left_side = interpret_expr(lhs, scope);
+            let right_side = interpret_expr(rhs, scope);
+            match (left_side, right_side) {
+                (ValueType::Int(left), ValueType::Int(right)) => ValueType::Int(left * right),
+                _ => panic!("Cannot multiply non-numeric values"),
+            }
+        }
+        Expr::BinaryExpr {
+            op: Operator::Div,
+            lhs,
+            rhs,
+        } => {
+            let left_side = interpret_expr(lhs, scope);
+            let right_side = interpret_expr(rhs, scope);
+            match (left_side, right_side) {
+                (ValueType::Int(left), ValueType::Int(right)) => ValueType::Int(left / right),
+                _ => panic!("Cannot divide non-numeric values"),
+            }
+        }
+        Expr::BinaryExpr {
+            op: Operator::Eq,
+            lhs,
+            rhs,
+        } => {
+            let left_side = interpret_expr(lhs, scope);
+            let right_side = interpret_expr(rhs, scope);
+            match (left_side, right_side) {
+                (ValueType::Int(left), ValueType::Int(right)) => ValueType::Bool(left == right),
+                (ValueType::String(left), ValueType::String(right)) => {
+                    ValueType::Bool(left == right)
+                }
+                (ValueType::Bool(left), ValueType::Bool(right)) => {
+                    ValueType::Bool(left == right)
+                }
+                _ => panic!("Cannot compare non-numeric values"),
+            }
+        }
+        Expr::BinaryExpr {
+            op: Operator::Neq,
+            lhs,
+            rhs,
+        } => {
+            let left_side = interpret_expr(lhs, scope);
+            let right_side = interpret_expr(rhs, scope);
+            match (left_side, right_side) {
+                (ValueType::Int(left), ValueType::Int(right)) => ValueType::Bool(left != right),
+                (ValueType::String(left), ValueType::String(right)) => {
+                    ValueType::Bool(left != right)
+                }
+                (ValueType::Bool(left), ValueType::Bool(right)) => {
+                    ValueType::Bool(left != right)
+                }
+                _ => panic!("Cannot compare non-numeric values"),
+            }
+        }
+        Expr::Token(x) => match x {
+            Token::Num(x) => ValueType::Int(*x),
+            Token::String(x) => ValueType::String(x.to_string()),
+            Token::Bool(x) => ValueType::Bool(*x),
+            Token::Identifier(x) => {
+                if let Some(val) = scope.get(x) {
+                    val.clone()
+                } else {
+                    panic!("Undefined variable: {}", x)
+                }
+            }
+            _ => ValueType::Nothing,
+        },
+        Expr::FnCall { name, args } => {
+            let mut args_vec = Vec::new();
+            for arg in args {
+                args_vec.push(interpret_expr(arg, scope));
+            }
+            call_fn(name, args_vec, scope)
+        }
+        Expr::FnDef {
+            name,
+            args,
+            body,
+            return_type,
+        } => todo!(),
+        Expr::Return { .. } => todo!(),
+    }
+}
 impl Interpreter {
     pub fn new(exprs: Vec<Expr>) -> Self {
         Self {
@@ -92,154 +235,12 @@ impl Interpreter {
         }
     }
 
-    pub fn interpret_expr(&self, expr: &Expr, scope: &mut HashMap<String, ValueType>) -> ValueType {
-        match expr {
-            Expr::BinaryExpr {
-                op: Operator::SetVal,
-                lhs,
-                rhs,
-            } => {
-                let right_side = self.interpret_expr(rhs, scope);
-                scope.insert(lhs.to_string(), right_side);
-                ValueType::Nothing
-            }
-            Expr::BinaryExpr {
-                op: Operator::Add,
-                lhs,
-                rhs,
-            } => {
-                let left_side = self.interpret_expr(lhs, scope);
-                let right_side = self.interpret_expr(rhs, scope);
-                match (left_side, right_side) {
-                    (ValueType::Int(left), ValueType::Int(right)) => ValueType::Int(left + right),
-                    (ValueType::String(left), ValueType::String(right)) => {
-                        ValueType::String(left + &right)
-                    }
-                    _ => panic!("Cannot add non-numeric values"),
-                }
-            }
-            Expr::BinaryExpr {
-                op: Operator::Sub,
-                lhs,
-                rhs,
-            } => {
-                let left_side = self.interpret_expr(lhs, scope);
-                let right_side = self.interpret_expr(rhs, scope);
-                match (left_side, right_side) {
-                    (ValueType::Int(left), ValueType::Int(right)) => ValueType::Int(left - right),
-                    _ => panic!("Cannot subtract non-numeric values"),
-                }
-            }
-            Expr::BinaryExpr {
-                op: Operator::Mul,
-                lhs,
-                rhs,
-            } => {
-                let left_side = self.interpret_expr(lhs, scope);
-                let right_side = self.interpret_expr(rhs, scope);
-                match (left_side, right_side) {
-                    (ValueType::Int(left), ValueType::Int(right)) => ValueType::Int(left * right),
-                    _ => panic!("Cannot multiply non-numeric values"),
-                }
-            }
-            Expr::BinaryExpr {
-                op: Operator::Div,
-                lhs,
-                rhs,
-            } => {
-                let left_side = self.interpret_expr(lhs, scope);
-                let right_side = self.interpret_expr(rhs, scope);
-                match (left_side, right_side) {
-                    (ValueType::Int(left), ValueType::Int(right)) => ValueType::Int(left / right),
-                    _ => panic!("Cannot divide non-numeric values"),
-                }
-            }
-            Expr::BinaryExpr {
-                op: Operator::Eq,
-                lhs,
-                rhs,
-            } => {
-                let left_side = self.interpret_expr(lhs, scope);
-                let right_side = self.interpret_expr(rhs, scope);
-                match (left_side, right_side) {
-                    (ValueType::Int(left), ValueType::Int(right)) => ValueType::Bool(left == right),
-                    (ValueType::String(left), ValueType::String(right)) => {
-                        ValueType::Bool(left == right)
-                    }
-                    (ValueType::Bool(left), ValueType::Bool(right)) => {
-                        ValueType::Bool(left == right)
-                    }
-                    _ => panic!("Cannot compare non-numeric values"),
-                }
-            }
-            Expr::BinaryExpr {
-                op: Operator::Neq,
-                lhs,
-                rhs,
-            } => {
-                let left_side = self.interpret_expr(lhs, scope);
-                let right_side = self.interpret_expr(rhs, scope);
-                match (left_side, right_side) {
-                    (ValueType::Int(left), ValueType::Int(right)) => ValueType::Bool(left != right),
-                    (ValueType::String(left), ValueType::String(right)) => {
-                        ValueType::Bool(left != right)
-                    }
-                    (ValueType::Bool(left), ValueType::Bool(right)) => {
-                        ValueType::Bool(left != right)
-                    }
-                    _ => panic!("Cannot compare non-numeric values"),
-                }
-            }
-            Expr::Token(x) => match x {
-                Token::Num(x) => ValueType::Int(*x),
-                Token::String(x) => ValueType::String(x.to_string()),
-                Token::Bool(x) => ValueType::Bool(*x),
-                Token::Identifier(x) => {
-                    if let Some(val) = scope.get(x) {
-                        val.clone()
-                    } else {
-                        panic!("Undefined variable: {}", x)
-                    }
-                }
-                _ => ValueType::Nothing,
-            },
-            Expr::FnCall { name, args } => {
-                let mut args_vec = Vec::new();
-                for arg in args {
-                    args_vec.push(self.interpret_expr(arg, scope));
-                }
-                self.call_fn(name, args_vec, scope)
-            }
-            Expr::FnDef {
-                name,
-                args,
-                body,
-                return_type,
-            } => todo!(),
-            Expr::Return { .. } => todo!(),
-        }
-    }
+
 
     pub fn run(&mut self) {
         for expr in &self.exprs {
-            self.interpret_expr(expr, &mut self.state.toplevel_scope);
+            interpret_expr(expr, &mut self.state.toplevel_scope);
         }
     }
 
-    pub fn call_fn(
-        &self,
-        name: &str,
-        args: Vec<ValueType>,
-        scope: &mut HashMap<String, ValueType>,
-    ) -> ValueType {
-        match scope.get(name) {
-            Some(key) => match key {
-                ValueType::Fn(FnType::Builtin(BuiltinFn {
-                    name, return_type, ..
-                })) => builtins::call_builtin(name, args, return_type.deref().to_owned()),
-                _ => panic!("Not a function"),
-            },
-            _ => panic!("Undefined function: {}", name),
-        }
-    }
 }
