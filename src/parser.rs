@@ -63,7 +63,7 @@ pub enum Expr {
         name: String,
         args: HashMap<String, Expr>,
         body: Vec<Expr>,
-        return_type: Option<String>,
+        return_type: String,
     },
     Return {
         inner: Box<Expr>,
@@ -241,7 +241,7 @@ impl Parser {
             Some(Token::Identifier(ident)) => match tokens.next() {
                 Some(Token::LParen) => {
                     let mut vals = HashMap::new();
-                    let mut return_type: Option<String> = None;
+                    let mut return_type: String = String::from("_none");
                     if tokens.peek() == Some(&&Token::RParen) {
                         tokens.next();
                     } else {
@@ -274,7 +274,7 @@ impl Parser {
                     let (body, tokens_new) = match tokens.next() {
                         Some(Token::ReturnType) => {
                             return_type = match tokens.next() {
-                                Some(Token::Type(t)) => Some(t.into()),
+                                Some(Token::Type(t)) => t.clone(),
                                 _ => panic!("Expected type"),
                             };
                             match tokens.next() {
