@@ -97,7 +97,10 @@ fn call_fn(name: &str, args: Vec<Value>, scope: &mut HashMap<String, Value>) -> 
             Value::Fn(FnType::Builtin(BuiltinFn {
                 name, return_type, ..
             })) => builtins::call_builtin(name, args, return_type.deref().to_owned()),
-            _ => panic!("Not a function"),
+            _ => {
+                // println!("{:#?}", scope);
+                panic!("Not a function")
+            },
         },
         _ => panic!("Undefined function: {}", name),
     }
@@ -226,13 +229,17 @@ fn interpret_expr(expr: &Expr, scope: &mut HashMap<String, Value>) -> Value {
             args,
             body,
             return_type,
-        } => Value::Fn(FnType::User(UserFn {
-            // FIXME: Is there a better way to do this?
-            name: name.clone(),
-            args: args.clone(),
-            body: body.clone(),
-            return_type: get_valuetype_from(return_type),
-        })),
+        } => {
+            let funcdef = Value::Fn(FnType::User(UserFn {
+                // FIXME: Is there a better way to do this?
+                name: name.clone(),
+                args: args.clone(),
+                body: body.clone(),
+                return_type: get_valuetype_from(return_type),
+            }));
+            scope.insert(name.clone(), funcdef);
+            Value::Nothing
+        }
         Expr::Return { .. } => todo!(),
     }
 }
