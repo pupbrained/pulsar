@@ -266,9 +266,11 @@ fn interpret_expr(expr: &Expr, scope: &mut HashMap<String, &Value>) -> Value {
 }
 impl Interpreter {
     pub fn new(exprs: Vec<Expr>) -> Self {
+        let mut toplevel_scope = HashMap::new();
+        builtins::make_builtins(&mut toplevel_scope);
         Self {
             state: State {
-                toplevel_scope: builtins::make_builtins(),
+                toplevel_scope: toplevel_scope,
             },
             exprs,
         }
