@@ -2,23 +2,21 @@ use std::collections::HashMap;
 
 use crate::interpreter::{BuiltinFn, FnType, Value};
 
-pub fn make_builtins() -> HashMap<String, &Value> {
-    let mut globals = HashMap::new();
-    globals.insert(
+pub fn make_builtins(scope: &mut HashMap<String, &Value>) {
+    scope.insert(
         "print".to_string(),
-        Value::Fn(FnType::Builtin(BuiltinFn {
+        &Value::Fn(FnType::Builtin(BuiltinFn {
             name: "print".to_string(),
             return_type: Box::new(Value::Nothing),
         })),
     );
-    globals.insert(
+    scope.insert(
         "println".to_string(),
-        Value::Fn(FnType::Builtin(BuiltinFn {
+        &Value::Fn(FnType::Builtin(BuiltinFn {
             name: "println".to_string(),
             return_type: Box::new(Value::Nothing),
         })),
     );
-    globals
 }
 
 pub fn call_builtin(name: &str, args: Vec<&Value>, return_type: Value) -> Value {
