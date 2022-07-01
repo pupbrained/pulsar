@@ -97,8 +97,19 @@ fn call_fn(name: &str, args: Vec<Value>, scope: &mut HashMap<String, Value>) -> 
             Value::Fn(FnType::Builtin(BuiltinFn {
                 name, return_type, ..
             })) => builtins::call_builtin(name, args, return_type.deref().to_owned()),
+            Value::Fn(FnType::User(UserFn {
+                name,
+                args,
+                body,
+                return_type,
+                ..
+            })) => {
+                let mut new_scope = scope.clone();
+                for (name, arg) in args {
+                    new_scope.insert(name.clone(), arg.clone());
+                }
+            }
             _ => {
-                // println!("{:#?}", scope);
                 panic!("Not a function")
             }
         },
