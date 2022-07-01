@@ -53,7 +53,7 @@ pub struct BuiltinFn {
 #[derive(Debug, Clone, PartialEq)]
 pub struct UserFn {
     pub name: String,
-    pub args: HashMap<String, Expr>, // TODO: Make Expr a ValueType
+    pub args: HashMap<String, ValueType>, // TODO: Make Expr a ValueType
     pub body: Vec<Expr>,
     pub return_type: ValueType,
 }
@@ -100,7 +100,7 @@ fn call_fn(name: &str, args: Vec<Value>, scope: &mut HashMap<String, Value>) -> 
             _ => {
                 // println!("{:#?}", scope);
                 panic!("Not a function")
-            },
+            }
         },
         _ => panic!("Undefined function: {}", name),
     }
@@ -233,7 +233,16 @@ fn interpret_expr(expr: &Expr, scope: &mut HashMap<String, Value>) -> Value {
             let funcdef = Value::Fn(FnType::User(UserFn {
                 // FIXME: Is there a better way to do this?
                 name: name.clone(),
-                args: args.clone(),
+                args: args
+                    .into_iter()
+                    .map(|(k, v)| {
+                        if let Expr::Token(Token::Type(name)) = v {
+                            (k.clone(), get_valuetype_from(name))
+                        } else {
+                            unreachable!("This should always a be a type token")
+                        }
+                    })
+                    .collect(),
                 body: body.clone(),
                 return_type: get_valuetype_from(return_type),
             }));

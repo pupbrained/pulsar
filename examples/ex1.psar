@@ -11,7 +11,7 @@ println(a, b, c, d, e, f, x, y, z);
 println("Hello world!");
 println(1, 1 + 1, "Hello World!", true, false);
 
-func do_thing() -> bool {
+func do_thing(bool unused) -> bool {
      return true;
 }
 
