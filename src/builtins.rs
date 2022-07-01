@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::interpreter::{BuiltinFn, FnType, Value};
 
-pub fn make_builtins() -> HashMap<String, Value> {
+pub fn make_builtins() -> HashMap<String, &Value> {
     let mut globals = HashMap::new();
     globals.insert(
         "print".to_string(),
@@ -21,7 +21,7 @@ pub fn make_builtins() -> HashMap<String, Value> {
     globals
 }
 
-pub fn call_builtin(name: &str, args: Vec<Value>, return_type: Value) -> Value {
+pub fn call_builtin(name: &str, args: Vec<&Value>, return_type: Value) -> Value {
     match name {
         "print" => {
             if args.len() > 1 {

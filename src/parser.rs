@@ -61,7 +61,7 @@ pub enum Expr {
     },
     FnDef {
         name: String,
-        args: HashMap<String, Expr>,
+        args: HashMap<(usize, String), Expr>,
         body: Vec<Expr>,
         return_type: String,
     },
@@ -245,6 +245,7 @@ impl Parser {
                     if tokens.peek() == Some(&&Token::RParen) {
                         tokens.next();
                     } else {
+                        let mut idx = 0;
                         loop {
                             match tokens.peek() {
                                 Some(Token::Type(t)) => {
@@ -253,7 +254,7 @@ impl Parser {
                                         Some(Token::Identifier(ident)) => {
                                             tokens.next();
                                             vals.insert(
-                                                ident.to_string(),
+                                                (idx, ident.to_string()),
                                                 Expr::Token(Token::Type(t.clone())),
                                             );
                                         }
@@ -269,6 +270,7 @@ impl Parser {
                                 }
                                 _ => panic!("Expected comma, or ')'"),
                             };
+                            idx += 1;
                         }
                     }
                     let (body, tokens_new) = match tokens.next() {
