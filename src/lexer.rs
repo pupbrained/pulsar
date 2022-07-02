@@ -1,6 +1,6 @@
 use {logos::Logos, std::fmt::Display, substring::Substring};
 
-#[derive(Logos, Debug, PartialEq, Clone)]
+#[derive(Logos, Debug, PartialEq, Eq, Clone)]
 pub enum Token {
     #[token(":=")]
     SetVal,

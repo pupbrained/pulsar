@@ -2,12 +2,12 @@ use std::{collections::HashMap, fmt::Display, iter::Peekable, slice::Iter};
 
 use crate::lexer::Token;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Parser {
     tokens: Vec<Token>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Operator {
     Add,
     Sub,
@@ -19,7 +19,7 @@ pub enum Operator {
 }
 
 impl Operator {
-    pub fn from_str(s: &str) -> Self {
+    fn from_str(s: &str) -> Self {
         match s {
             "+" => Self::Add,
             "-" => Self::Sub,
@@ -112,7 +112,7 @@ impl Parser {
         exprs
     }
 
-    pub fn parse_expr<'a>(
+    fn parse_expr<'a>(
         tokens: &'a mut Peekable<Iter<'a, Token>>,
         mut sc_check: bool,
     ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
@@ -161,62 +161,33 @@ impl Parser {
                 Some(Token::Operator(op)) => {
                     tokens.next();
                     let (expr, tokens_new) = Self::parse_expr(tokens, false);
-                    match op.as_str() {
-                        "+" => (
-                            Expr::BinaryExpr {
-                                op: Operator::Add,
-                                lhs: Box::new(Expr::Token(Token::Num(*num))),
-                                rhs: Box::new(expr),
-                            },
-                            tokens_new,
-                        ),
-                        "-" => (
-                            Expr::BinaryExpr {
-                                op: Operator::Sub,
-                                lhs: Box::new(Expr::Token(Token::Num(*num))),
-                                rhs: Box::new(expr),
-                            },
-                            tokens_new,
-                        ),
-                        "*" => (
-                            Expr::BinaryExpr {
-                                op: Operator::Mul,
-                                lhs: Box::new(Expr::Token(Token::Num(*num))),
-                                rhs: Box::new(expr),
-                            },
-                            tokens_new,
-                        ),
-                        "/" => (
-                            Expr::BinaryExpr {
-                                op: Operator::Div,
-                                lhs: Box::new(Expr::Token(Token::Num(*num))),
-                                rhs: Box::new(expr),
-                            },
-                            tokens_new,
-                        ),
-                        "=" => (
-                            Expr::BinaryExpr {
-                                op: Operator::Eq,
-                                lhs: Box::new(Expr::Token(Token::Num(*num))),
-                                rhs: Box::new(expr),
-                            },
-                            tokens_new,
-                        ),
-                        "!=" => (
-                            Expr::BinaryExpr {
-                                op: Operator::Neq,
-                                lhs: Box::new(Expr::Token(Token::Num(*num))),
-                                rhs: Box::new(expr),
-                            },
-                            tokens_new,
-                        ),
-                        _ => panic!("Expected operator"),
-                    }
+                    (
+                        Expr::BinaryExpr {
+                            op: Operator::from_str(op),
+                            lhs: Box::new(Expr::Token(Token::Num(*num))),
+                            rhs: Box::new(expr),
+                        },
+                        tokens_new,
+                    )
                 }
                 _ => (Expr::Token(Token::Num(*num)), tokens),
             },
             Some(Token::Bool(bool)) => (Expr::Token(Token::Bool(*bool)), tokens),
-            Some(Token::String(string)) => (Expr::Token(Token::String(string.into())), tokens),
+            Some(Token::String(string)) => match tokens.peek() {
+                Some(Token::Operator(op)) => {
+                    tokens.next();
+                    let (expr, tokens_new) = Self::parse_expr(tokens, false);
+                    (
+                        Expr::BinaryExpr {
+                            op: Operator::from_str(op),
+                            lhs: Box::new(Expr::Token(Token::String(string.into()))),
+                            rhs: Box::new(expr),
+                        },
+                        tokens_new,
+                    )
+                }
+                _ => (Expr::Token(Token::String(string.into())), tokens),
+            },
             Some(Token::Func) => {
                 sc_check = false;
                 Self::parse_fn_def(tokens)
@@ -234,7 +205,7 @@ impl Parser {
         }
     }
 
-    pub fn parse_fn_def<'a>(
+    fn parse_fn_def<'a>(
         tokens: &'a mut Peekable<Iter<'a, Token>>,
     ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
         match tokens.next() {
@@ -287,7 +258,7 @@ impl Parser {
                         Some(Token::LBrace) => Self::handle_func_block(tokens),
                         _ => panic!("Expected a return statement or brace"),
                     };
-                    return (
+                    (
                         Expr::FnDef {
                             name: ident.into(),
                             args: vals,
@@ -295,7 +266,7 @@ impl Parser {
                             return_type,
                         },
                         tokens_new,
-                    );
+                    )
                 }
                 _ => panic!("Expected '(', got {:?}", tokens.peek()),
             },
@@ -303,25 +274,22 @@ impl Parser {
         }
     }
 
-    pub fn handle_func_block<'a>(
+    fn handle_func_block<'a>(
         mut tokens: &'a mut Peekable<Iter<'a, Token>>,
     ) -> (Vec<Expr>, &'a mut Peekable<Iter<'a, Token>>) {
         let mut exprs = Vec::new();
         loop {
             let (expr, tokens_new) = Self::parse_expr(tokens, true);
             exprs.push(expr);
-            match tokens_new.peek() {
-                Some(Token::RBrace) => {
-                    tokens_new.next();
-                    return (exprs, tokens_new);
-                }
-                _ => (),
+            if let Some(Token::RBrace) = tokens_new.peek() {
+                tokens_new.next();
+                return (exprs, tokens_new);
             };
             tokens = tokens_new;
         }
     }
 
-    pub fn parse_fn_call<'a>(
+    fn parse_fn_call<'a>(
         ident: String,
         mut tokens: &'a mut Peekable<Iter<'a, Token>>,
     ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {

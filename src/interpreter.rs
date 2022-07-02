@@ -30,12 +30,12 @@ pub enum Value {
     Nothing,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValueType {
     Int,    /* (i64) */
     String, /* (String) */
     Bool,   /* (bool) */
-    Fn,     /* (FnType) */
+    // Fn,     /* (FnType) */
     Nothing,
 }
 
@@ -97,21 +97,21 @@ fn call_fn(name: &str, passed_args: Vec<Value>, scope: &mut Scope) -> Value {
         Some(key) => match key.as_ref() {
             Value::Fn(FnType::Builtin(BuiltinFn {
                 name, return_type, ..
-            })) => builtins::call_builtin(&name, passed_args, return_type.deref().to_owned()),
+            })) => builtins::call_builtin(name, passed_args, return_type.deref().to_owned()),
             Value::Fn(FnType::User(UserFn {
-                name,
+                // name,
                 args,
                 body,
-                return_type,
+                // return_type,
                 ..
             })) => {
                 let mut new_scope = scope.clone();
-                for ((index, name), _) in args {
+                args.iter().for_each(|((index, name), _)| {
                     new_scope.insert(name.clone(), Box::new(passed_args[*index].clone()));
-                }
+                });
                 for expr in body {
                     interpret_expr(expr, &mut new_scope);
-                };
+                }
                 Value::Nothing
             }
             _ => {
@@ -150,10 +150,25 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
         } => {
             let left_side = interpret_expr(lhs, scope);
             let right_side = interpret_expr(rhs, scope);
-            match (left_side, right_side) {
-                (Value::Int(left), Value::Int(right)) => Value::Int(left + right),
-                (Value::String(left), Value::String(right)) => Value::String(left + &right),
-                _ => panic!("Cannot add non-numeric values"),
+            match left_side {
+                Value::Int(left) => match right_side {
+                    Value::Int(right) => Value::Int(left + right),
+                    Value::String(right) => Value::String(left.to_string() + &right),
+                    _ => panic!("Invalid type for addition"),
+                },
+                Value::String(left) => match right_side {
+                    Value::Int(right) => Value::String(left + &right.to_string()),
+                    Value::String(right) => Value::String(left + &right),
+                    Value::Bool(right) => Value::String(left + &right.to_string()),
+                    _ => panic!("Invalid type for addition",),
+                },
+                Value::Bool(left) => match right_side {
+                    Value::Int(right) => Value::String(left.to_string() + &right.to_string()),
+                    Value::String(right) => Value::String(left.to_string() + &right),
+                    Value::Bool(right) => Value::String(left.to_string() + &right.to_string()),
+                    _ => panic!("Invalid type for addition",),
+                },
+                _ => panic!("Invalid type for addition"),
             }
         }
         Expr::BinaryExpr {
@@ -250,7 +265,7 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
                 // FIXME: Is there a better way to do this?
                 name: name.clone(),
                 args: args
-                    .into_iter()
+                    .iter()
                     .map(|((i, n), v)| {
                         if let Expr::Token(Token::Type(name)) = v {
                             ((*i, n.clone()), get_valuetype_from(name))
@@ -268,6 +283,7 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
         Expr::Return { .. } => todo!(),
     }
 }
+
 impl Interpreter {
     pub fn new(exprs: Vec<Expr>) -> Self {
         let mut toplevel_scope = HashMap::new();

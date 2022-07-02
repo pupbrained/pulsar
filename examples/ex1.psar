@@ -11,10 +11,12 @@ println(a, b, c, d, e, f, x, y, z);
 println("Hello world!");
 println(1, 1 + 1, "Hello World!", true, false);
 
-func do_thing(bool unused) -> bool {
+func do_thing(bool unused) {
      x := 1;
-     println("This is x when in the function", x, "and unused is", unused);
+     println("This is x when in the function: " + x);
+     println("This is unused when in the function: " + unused);
 }
-g := do_thing(true);
 
-println("This is x outside of the function", x);
+do_thing(true);
+
+println("This is x outside of the function: " + x);

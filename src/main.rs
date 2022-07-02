@@ -4,23 +4,30 @@ mod lexer;
 mod parser;
 
 use {
+    clap::Parser,
     interpreter::Interpreter,
     lexer::Token,
     logos::Logos,
-    parser::Parser,
+    parser::Parser as PulsarParser,
     std::{fs::File, io::Read},
 };
 
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    #[clap(short, long, value_parser)]
+    file: String,
+}
+
 fn read_file() -> String {
-    let mut file = File::open("../examples/ex1.psar").unwrap();
     let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
+    File::open(Args::parse().file)
+        .unwrap()
+        .read_to_string(&mut contents)
+        .unwrap();
     contents
 }
 
 fn main() {
-    let lex: Vec<_> = Token::lexer(&read_file()).collect();
-    let exprs: Vec<_> = Parser::new(lex).parse();
-    let mut interpreter: Interpreter = Interpreter::new(exprs);
-    interpreter.run();
+    Interpreter::new(PulsarParser::new(Token::lexer(&read_file()).collect()).parse()).run();
 }
