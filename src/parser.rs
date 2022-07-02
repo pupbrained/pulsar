@@ -200,10 +200,11 @@ impl Parser {
             _ => (Expr::Token(Token::Error), tokens),
         };
         if sc_check {
-            if tokens_new.next() == Some(&Token::Semicolon) {
+            if tokens_new.peek() == Some(&&Token::Semicolon) {
+                tokens_new.next();
                 (expr, tokens_new)
             } else {
-                panic!("Expected semicolon");
+                panic!("Expected semicolon, got {:?}", tokens_new.next());
             }
         } else {
             (expr, tokens_new)
