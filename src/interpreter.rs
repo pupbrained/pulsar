@@ -35,7 +35,7 @@ pub enum ValueType {
     Int,    /* (i64) */
     String, /* (String) */
     Bool,   /* (bool) */
-    // Fn,     /* (FnType) */
+    Fn,     /* (FnType) */
     Nothing,
 }
 
@@ -92,17 +92,29 @@ impl Display for Value {
     }
 }
 
+impl Value {
+    pub fn get_type(&self) -> ValueType {
+        match self {
+            Value::Int(_) => ValueType::Int,
+            Value::String(_) => ValueType::String,
+            Value::Bool(_) => ValueType::Bool,
+            Value::Fn(_f) => ValueType::Fn,
+            Value::Nothing => ValueType::Nothing,
+        }
+    }
+}
+
 fn call_fn(name: &str, passed_args: Vec<Value>, scope: &mut Scope) -> Value {
     match scope.get(name) {
         Some(key) => match key.as_ref() {
-            Value::Fn(FnType::Builtin(BuiltinFn {
-                name, return_type, ..
-            })) => builtins::call_builtin(name, passed_args, return_type.deref().to_owned()),
+            Value::Fn(FnType::Builtin(BuiltinFn { name, return_type })) => {
+                builtins::call_builtin(name, passed_args, return_type.to_owned())
+            }
             Value::Fn(FnType::User(UserFn {
-                // name,
+                name,
                 args,
                 body,
-                // return_type,
+                return_type,
                 ..
             })) => {
                 let mut new_scope = scope.clone();
