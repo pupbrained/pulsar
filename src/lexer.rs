@@ -17,6 +17,15 @@ pub enum Token {
     #[regex("true|false", |lex| lex.slice().parse())]
     Bool(bool),
 
+    #[token("if")]
+    If,
+
+    #[token("elif")]
+    Elif,
+
+    #[token("else")]
+    Else,
+
     #[token("(")]
     LParen,
 
@@ -53,7 +62,7 @@ pub enum Token {
     #[regex("bool|int|string", |lex| lex.slice().parse())]
     Type(String),
 
-    #[regex(r"!=|[=+\-*/]", |lex| lex.slice().parse())]
+    #[regex(r"!=|==|[=+\-*/]", |lex| lex.slice().parse())]
     Operator(String),
 
     #[error]
@@ -69,6 +78,9 @@ impl Display for Token {
             Token::Identifier(s) => write!(f, "{s}"),
             Token::Num(i) => write!(f, "{i}"),
             Token::Bool(b) => write!(f, "{b}"),
+            Token::If => write!(f, "if"),
+            Token::Elif => write!(f, "elif"),
+            Token::Else => write!(f, "else"),
             Token::LParen => write!(f, "("),
             Token::RParen => write!(f, ")"),
             Token::LBrace => write!(f, "{{"),

@@ -316,6 +316,17 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
             scope.insert(name.clone(), Box::new(funcdef));
             Value::Nothing
         }
+        Expr::If { cond, body } => {
+            if interpret_expr(cond, scope) == Value::Bool(true) {
+                let mut new_scope = scope.clone();
+                for expr in body {
+                    interpret_expr(expr, &mut new_scope);
+                }
+                Value::Nothing
+            } else {
+                Value::Nothing
+            }
+        }
         Expr::Return { inner } => {
             let returned_value = interpret_expr(inner, scope);
             Value::_Return(Box::new(returned_value))

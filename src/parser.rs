@@ -40,7 +40,7 @@ impl Display for Operator {
             Operator::Sub => write!(f, "-"),
             Operator::Mul => write!(f, "*"),
             Operator::Div => write!(f, "/"),
-            Operator::Eq => write!(f, "="),
+            Operator::Eq => write!(f, "=="),
             Operator::Neq => write!(f, "!="),
             Operator::SetVal => write!(f, ":="),
         }
@@ -65,6 +65,10 @@ pub enum Expr {
         body: Vec<Expr>,
         return_type: String,
     },
+    If {
+        cond: Box<Expr>,
+        body: Vec<Expr>,
+    },
     Return {
         inner: Box<Expr>,
     },
@@ -84,6 +88,7 @@ impl Display for Expr {
             } => {
                 write!(f, "func {name}({args:?}) {{{body:?}}} -> {return_type:?}")
             }
+            Expr::If { cond, body } => write!(f, "if {cond} {{{body:?}}}"),
             Expr::Return { inner } => write!(f, "return {inner}"),
         }
     }
@@ -187,6 +192,10 @@ impl Parser {
             Some(Token::Func) => {
                 sc_check = false;
                 Self::parse_fn_def(tokens)
+            }
+            Some(Token::If) => {
+                sc_check = false;
+                Self::parse_if(tokens)
             }
             _ => (Expr::Token(Token::Error), tokens),
         };
@@ -304,6 +313,30 @@ impl Parser {
                 };
                 tokens = tokens_new;
             }
+        }
+    }
+
+    fn parse_if<'a>(
+        tokens: &'a mut Peekable<Iter<'a, Token>>,
+    ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
+        let (cond, tokens_new) = Self::parse_expr(tokens, false);
+        match tokens_new.peek() {
+            Some(Token::LBrace) => loop {
+                let (expr, tokens_new) = Self::parse_expr(tokens_new, false);
+                match tokens_new.next() {
+                    Some(Token::RBrace) => {
+                        return (
+                            Expr::If {
+                                cond: Box::new(cond),
+                                body: vec![expr],
+                            },
+                            tokens_new,
+                        )
+                    }
+                    _ => 
+                };
+            },
+            _ => panic!("Expected brace"),
         }
     }
 }
