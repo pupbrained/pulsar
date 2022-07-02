@@ -26,7 +26,7 @@ pub enum Value {
     String(String),
     Bool(bool),
     Fn(FnType),
-    _Return(Box<Value>),
+    Return(Box<Value>),
     Nothing,
 }
 
@@ -87,7 +87,7 @@ impl Display for Value {
             Value::String(s) => write!(f, "{s}"),
             Value::Bool(b) => write!(f, "{b}"),
             Value::Fn(_) => Ok(()),
-            Value::_Return(v) => v.fmt(f),
+            Value::Return(v) => v.fmt(f),
             Value::Nothing => write!(f, "Nothing"),
         }
     }
@@ -100,7 +100,7 @@ impl Value {
             Value::String(_) => ValueType::String,
             Value::Bool(_) => ValueType::Bool,
             Value::Fn(_f) => ValueType::Fn,
-            Value::_Return(v) => v.get_type(),
+            Value::Return(v) => v.get_type(),
             Value::Nothing => ValueType::Nothing,
         }
     }
@@ -138,7 +138,7 @@ fn call_fn(name: &str, passed_args: Vec<Value>, scope: &mut Scope) -> Value {
                 });
                 for expr in body {
                     let returned_val_from_expr = interpret_expr(expr, &mut new_scope);
-                    if let Value::_Return(val) = returned_val_from_expr {
+                    if let Value::Return(val) = returned_val_from_expr {
                         if *return_type != val.get_type() {
                             panic!(
                                 "Invalid value returned from function {name}. Expected {return_type:?}, got {:?}",
@@ -320,7 +320,10 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
             if interpret_expr(cond, scope) == Value::Bool(true) {
                 let mut new_scope = scope.clone();
                 for expr in body {
-                    interpret_expr(expr, &mut new_scope);
+                    match interpret_expr(expr, &mut new_scope) {
+                        Value::Return(val) => return *val,
+                        _ => continue,
+                    }
                 }
                 Value::Nothing
             } else {
@@ -329,7 +332,7 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
         }
         Expr::Return { inner } => {
             let returned_value = interpret_expr(inner, scope);
-            Value::_Return(Box::new(returned_value))
+            Value::Return(Box::new(returned_value))
         }
     }
 }

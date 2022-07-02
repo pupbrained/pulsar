@@ -325,6 +325,7 @@ impl Parser {
         let mut body: Vec<Expr> = vec![];
         match tokens.peek() {
             Some(Token::LBrace) => loop {
+                tokens.next();
                 let (expr, tokens_newer) = Self::parse_expr(tokens, false);
                 body.push(expr);
                 if let Some(Token::RBrace) = tokens_newer.peek() {
