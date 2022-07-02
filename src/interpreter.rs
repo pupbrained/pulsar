@@ -7,7 +7,6 @@ use {
     std::{
         collections::HashMap,
         fmt::{Display, Formatter},
-        ops::Deref,
     },
 };
 
@@ -45,7 +44,7 @@ pub enum FnType {
     User(UserFn),
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BuiltinFn {
     pub name: String,
     pub return_type: ValueType,
@@ -108,15 +107,12 @@ fn call_fn(name: &str, passed_args: Vec<Value>, scope: &mut Scope) -> Value {
     match scope.get(name) {
         Some(key) => match key.as_ref() {
             Value::Fn(FnType::Builtin(BuiltinFn { name, return_type })) => {
-                let returned_value =
-                    builtins::call_builtin(name, passed_args, return_type.to_owned());
+                let returned_value = builtins::call_builtin(name, passed_args);
                 if returned_value.get_type() == *return_type {
                     returned_value
                 } else {
                     panic!(
-                        "Invalid value returned from builtin function {}. Expected {:?}, got {:?}",
-                        name,
-                        return_type,
+                        "Invalid value returned from builtin function {name}. Expected {return_type:?}, got {:?}",
                         returned_value.get_type()
                     );
                 }
@@ -138,10 +134,10 @@ fn call_fn(name: &str, passed_args: Vec<Value>, scope: &mut Scope) -> Value {
                 Value::Nothing
             }
             _ => {
-                panic!("Not a function")
+                panic!("Not a function: {name}");
             }
         },
-        _ => panic!("Undefined function: {}", name),
+        _ => panic!("Undefined function: {name}"),
     }
 }
 
@@ -151,7 +147,7 @@ fn get_valuetype_from(name: &str) -> ValueType {
         "int" => ValueType::Int,
         "string" => ValueType::String,
         "_none" => ValueType::Nothing,
-        _ => panic!("Invalid type name: {}", name),
+        _ => panic!("Invalid type name: {name}"),
     }
 }
 
@@ -266,7 +262,7 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
                 if let Some(val) = scope.get(x) {
                     *val.clone()
                 } else {
-                    panic!("Undefined variable: {}", x)
+                    panic!("Undefined variable: {x}")
                 }
             }
             _ => Value::Nothing,

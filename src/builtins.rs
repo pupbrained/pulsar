@@ -33,7 +33,7 @@ pub fn make_builtins(scope: &mut HashMap<String, Box<Value>>) {
     );
 }
 
-pub fn call_builtin(name: &str, args: Vec<Value>, return_type: ValueType) -> Value {
+pub fn call_builtin(name: &str, args: Vec<Value>) -> Value {
     match name {
         "print" => {
             if args.len() > 1 {
