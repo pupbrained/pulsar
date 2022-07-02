@@ -321,22 +321,19 @@ impl Parser {
     ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
         let (cond, tokens_after_cond) = Self::parse_expr(tokens, false);
         tokens = tokens_after_cond;
-        let mut body: Vec<Expr> = vec!();
+        let mut body: Vec<Expr> = vec![];
         match tokens.peek() {
             Some(Token::LBrace) => loop {
                 let (expr, tokens_newer) = Self::parse_expr(tokens, false);
                 body.push(expr);
-                match tokens_newer.peek() {
-                    Some(Token::RBrace) => {
-                        return (
-                            Expr::If {
-                                cond: Box::new(cond),
-                                body: body,
-                            },
-                            tokens_newer,
-                        )
-                    }
-                    _ => (),
+                if let Some(Token::RBrace) = tokens_newer.peek() {
+                    return (
+                        Expr::If {
+                            cond: Box::new(cond),
+                            body,
+                        },
+                        tokens_newer,
+                    );
                 };
                 tokens = tokens_newer;
             },
