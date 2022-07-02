@@ -12,8 +12,9 @@ println("Hello world!");
 println(1, 1 + 1, "Hello World!", true, false);
 
 func do_thing(bool unused) -> bool {
-     println("Hi!!!!!");
-     return true;
+     x := 1;
+     println("This is x when in the function", x, "and unused is", unused);
 }
-
 g := do_thing(true);
+
+println("This is x outside of the function", x);
