@@ -1,27 +1,11 @@
-x := 5;
-y := 2;
-z := 1 + 3 + 5 - 7;
-a := true;
-b := y + 5;
-c := b + 3;
-d := "hello!";
-e := d + "2";
-f := e + "3";
-println(a, b, c, d, e, f, x, y, z);
-println("Hello world!");
-println(1, 1 + 1, "Hello World!", true, false);
-
 func do_thing(bool unused) {
      x := 1;
      y := 3;
      println("This is x when in the function: " + x);
      println("This is y when in the function: " + y);
      println("This is unused when in the function: " + unused);
-     println("Between x and y, the maximum value is: " + max(x, y));
-     println("Between x and y, the minimum value is: " + min(x, y));
+     return x + y;
 }
 
-do_thing(true);
-
-println("This is x outside of the function: " + x);
-println("This is y outside of the function: " + y);
+x := do_thing(true);
+print(x);
