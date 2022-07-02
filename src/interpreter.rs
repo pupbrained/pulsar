@@ -138,6 +138,12 @@ fn call_fn(name: &str, passed_args: Vec<Value>, scope: &mut Scope) -> Value {
                 });
                 for expr in body {
                     let returned_val_from_expr = interpret_expr(expr, &mut new_scope);
+                    if *return_type != returned_val_from_expr.get_type() {
+                        panic!(
+                            "Invalid value returned from function {name}. Expected {return_type:?}, got {:?}",
+                            returned_val_from_expr.get_type()
+                        );
+                    }
                     if let Value::_Return(val) = returned_val_from_expr {
                         return *val;
                     };
@@ -313,7 +319,7 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
         Expr::Return { inner } => {
             let returned_value = interpret_expr(inner, scope);
             Value::_Return(Box::new(returned_value))
-        },
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-func do_thing(bool unused) {
+func do_thing(bool unused) -> int {
      x := 1;
      y := 3;
      println("This is x when in the function: " + x);
@@ -8,4 +8,4 @@ func do_thing(bool unused) {
 }
 
 x := do_thing(true);
-print(x);
+println(x);
