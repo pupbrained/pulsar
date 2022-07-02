@@ -17,6 +17,13 @@ pub fn make_builtins(scope: &mut HashMap<String, Box<Value>>) {
             return_type: Box::new(Value::Nothing),
         }))),
     );
+    scope.insert(
+        "max".to_string(),
+        Box::new(Value::Fn(FnType::Builtin(BuiltinFn {
+            name: "max".to_string(),
+            return_type: Box::new(Value::Int(0)), // FIXME: Actually return the max
+        }))),
+    );
 }
 
 pub fn call_builtin(name: &str, args: Vec<Value>, return_type: Value) -> Value {
@@ -50,6 +57,40 @@ pub fn call_builtin(name: &str, args: Vec<Value>, return_type: Value) -> Value {
             }
             return_type
         }
+        "max" => match args[0] {
+            Value::Int(a) => {
+                let mut max = a;
+                for arg in &args[1..] {
+                    match arg {
+                        Value::Int(b) => {
+                            if b > &max {
+                                max = *b;
+                            }
+                        }
+                        _ => panic!("max takes only ints"),
+                    }
+                }
+                Value::Int(max)
+            }
+            _ => panic!("max takes only ints"),
+        },
+        "min" => match args[0] {
+            Value::Int(a) => {
+                let mut min = a;
+                for arg in &args[1..] {
+                    match arg {
+                        Value::Int(b) => {
+                            if b < &min {
+                                min = *b;
+                            }
+                        }
+                        _ => panic!("min takes only ints"),
+                    }
+                }
+                Value::Int(min)
+            }
+            _ => panic!("min takes only ints"),
+        },
         _ => panic!("Not a function"),
     }
 }

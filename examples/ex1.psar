@@ -13,10 +13,13 @@ println(1, 1 + 1, "Hello World!", true, false);
 
 func do_thing(bool unused) {
      x := 1;
+     y := 3;
      println("This is x when in the function: " + x);
+     println("This is y when in the function: " + y);
      println("This is unused when in the function: " + unused);
 }
 
 do_thing(true);
 
 println("This is x outside of the function: " + x);
+println("This is y outside of the function: " + y);
