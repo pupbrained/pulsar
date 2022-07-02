@@ -4,7 +4,7 @@ func do_thing(bool unused) -> int {
      println("This is x when in the function: " + x);
      println("This is y when in the function: " + y);
      println("This is unused when in the function: " + unused);
-     if x == y {
+     if true {
           println("x is equal to y");
           return x + y;
      }
