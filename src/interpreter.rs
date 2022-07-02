@@ -11,13 +11,14 @@ use {
     },
 };
 
-pub struct Interpreter<'a> {
-    pub state: State<'a>,
+pub struct Interpreter {
+    pub state: State,
     pub exprs: Vec<Expr>,
 }
 
-pub struct State<'a> {
-    pub toplevel_scope: HashMap<String, &'a Value>,
+type Scope = HashMap<String, Box<Value>>;
+pub struct State {
+    pub toplevel_scope: Scope,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -91,12 +92,12 @@ impl Display for Value {
     }
 }
 
-fn call_fn(name: &str, passed_args: Vec<&Value>, scope: &mut HashMap<String, &Value>) -> Value {
+fn call_fn(name: &str, passed_args: Vec<Value>, scope: &mut Scope) -> Value {
     match scope.get(name) {
-        Some(key) => match key {
+        Some(key) => match key.as_ref() {
             Value::Fn(FnType::Builtin(BuiltinFn {
                 name, return_type, ..
-            })) => builtins::call_builtin(name, passed_args, return_type.deref().to_owned()),
+            })) => builtins::call_builtin(&name, passed_args, return_type.deref().to_owned()),
             Value::Fn(FnType::User(UserFn {
                 name,
                 args,
@@ -106,8 +107,8 @@ fn call_fn(name: &str, passed_args: Vec<&Value>, scope: &mut HashMap<String, &Va
             })) => {
                 let mut new_scope = scope.clone();
                 for ((index, name), _) in args {
-                    new_scope.insert(name.clone(), passed_args[*index]);
-                };
+                    new_scope.insert(name.clone(), Box::new(passed_args[*index].clone()));
+                }
                 Value::Nothing
             }
             _ => {
@@ -128,7 +129,7 @@ fn get_valuetype_from(name: &str) -> ValueType {
     }
 }
 
-fn interpret_expr(expr: &Expr, scope: &mut HashMap<String, &Value>) -> Value {
+fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
     match expr {
         Expr::BinaryExpr {
             op: Operator::SetVal,
@@ -136,7 +137,7 @@ fn interpret_expr(expr: &Expr, scope: &mut HashMap<String, &Value>) -> Value {
             rhs,
         } => {
             let right_side = interpret_expr(rhs, scope);
-            scope.insert(lhs.to_string(), &right_side);
+            scope.insert(lhs.to_string(), Box::new(right_side));
             Value::Nothing
         }
         Expr::BinaryExpr {
@@ -222,7 +223,7 @@ fn interpret_expr(expr: &Expr, scope: &mut HashMap<String, &Value>) -> Value {
             Token::Bool(x) => Value::Bool(*x),
             Token::Identifier(x) => {
                 if let Some(val) = scope.get(x) {
-                    **val
+                    *val.clone()
                 } else {
                     panic!("Undefined variable: {}", x)
                 }
@@ -232,7 +233,7 @@ fn interpret_expr(expr: &Expr, scope: &mut HashMap<String, &Value>) -> Value {
         Expr::FnCall { name, args } => {
             let mut args_vec = Vec::new();
             for arg in args {
-                args_vec.push(&interpret_expr(arg, scope));
+                args_vec.push(interpret_expr(arg, scope));
             }
             call_fn(name, args_vec, scope)
         }
@@ -258,7 +259,7 @@ fn interpret_expr(expr: &Expr, scope: &mut HashMap<String, &Value>) -> Value {
                 body: body.clone(),
                 return_type: get_valuetype_from(return_type),
             }));
-            scope.insert(name.clone(), &funcdef);
+            scope.insert(name.clone(), Box::new(funcdef));
             Value::Nothing
         }
         Expr::Return { .. } => todo!(),
@@ -269,9 +270,7 @@ impl Interpreter {
         let mut toplevel_scope = HashMap::new();
         builtins::make_builtins(&mut toplevel_scope);
         Self {
-            state: State {
-                toplevel_scope: toplevel_scope,
-            },
+            state: State { toplevel_scope },
             exprs,
         }
     }
