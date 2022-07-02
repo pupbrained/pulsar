@@ -24,6 +24,13 @@ pub fn make_builtins(scope: &mut HashMap<String, Box<Value>>) {
             return_type: Box::new(Value::Int(0)), // FIXME: Actually return the max
         }))),
     );
+    scope.insert(
+        "min".to_string(),
+        Box::new(Value::Fn(FnType::Builtin(BuiltinFn {
+            name: "min".to_string(),
+            return_type: Box::new(Value::Int(0)), // FIXME: Actually return the min
+        }))),
+    );
 }
 
 pub fn call_builtin(name: &str, args: Vec<Value>, return_type: Value) -> Value {

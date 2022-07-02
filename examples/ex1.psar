@@ -17,6 +17,8 @@ func do_thing(bool unused) {
      println("This is x when in the function: " + x);
      println("This is y when in the function: " + y);
      println("This is unused when in the function: " + unused);
+     println("Between x and y, the maximum value is: " + max(x, y));
+     println("Between x and y, the minimum value is: " + min(x, y));
 }
 
 do_thing(true);
