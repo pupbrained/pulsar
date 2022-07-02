@@ -26,6 +26,7 @@ pub enum Value {
     String(String),
     Bool(bool),
     Fn(FnType),
+    _Return(Box<Value>),
     Nothing,
 }
 
@@ -86,6 +87,7 @@ impl Display for Value {
             Value::String(s) => write!(f, "{s}"),
             Value::Bool(b) => write!(f, "{b}"),
             Value::Fn(_) => Ok(()),
+            Value::_Return(v) => v.fmt(f),
             Value::Nothing => write!(f, "Nothing"),
         }
     }
@@ -98,6 +100,7 @@ impl Value {
             Value::String(_) => ValueType::String,
             Value::Bool(_) => ValueType::Bool,
             Value::Fn(_f) => ValueType::Fn,
+            Value::_Return(v) => v.get_type(),
             Value::Nothing => ValueType::Nothing,
         }
     }
@@ -134,7 +137,10 @@ fn call_fn(name: &str, passed_args: Vec<Value>, scope: &mut Scope) -> Value {
                     new_scope.insert(name.clone(), Box::new(passed_args[*index].clone()));
                 });
                 for expr in body {
-                    interpret_expr(expr, &mut new_scope);
+                    let returned_val_from_expr = interpret_expr(expr, &mut new_scope);
+                    if let Value::_Return(val) = returned_val_from_expr {
+                        return *val;
+                    };
                 }
                 Value::Nothing
             }
@@ -304,7 +310,10 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
             scope.insert(name.clone(), Box::new(funcdef));
             Value::Nothing
         }
-        Expr::Return { .. } => todo!(),
+        Expr::Return { inner } => {
+            let returned_value = interpret_expr(inner, scope);
+            Value::_Return(Box::new(returned_value))
+        },
     }
 }
 
