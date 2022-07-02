@@ -108,7 +108,18 @@ fn call_fn(name: &str, passed_args: Vec<Value>, scope: &mut Scope) -> Value {
     match scope.get(name) {
         Some(key) => match key.as_ref() {
             Value::Fn(FnType::Builtin(BuiltinFn { name, return_type })) => {
-                builtins::call_builtin(name, passed_args, return_type.to_owned())
+                let returned_value =
+                    builtins::call_builtin(name, passed_args, return_type.to_owned());
+                if returned_value.get_type() == *return_type {
+                    returned_value
+                } else {
+                    panic!(
+                        "Invalid value returned from builtin function {}. Expected {:?}, got {:?}",
+                        name,
+                        return_type,
+                        returned_value.get_type()
+                    );
+                }
             }
             Value::Fn(FnType::User(UserFn {
                 name,
