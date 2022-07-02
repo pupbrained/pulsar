@@ -48,7 +48,7 @@ pub enum FnType {
 #[derive(Debug, Clone, PartialEq)]
 pub struct BuiltinFn {
     pub name: String,
-    pub return_type: Box<Value>,
+    pub return_type: ValueType,
 }
 
 #[derive(Debug, Clone, PartialEq)]

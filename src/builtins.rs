@@ -1,27 +1,27 @@
 use std::collections::HashMap;
 
-use crate::interpreter::{BuiltinFn, FnType, Value};
+use crate::interpreter::{BuiltinFn, FnType, Value, ValueType};
 
 pub fn make_builtins(scope: &mut HashMap<String, Box<Value>>) {
     scope.insert(
         "print".to_string(),
         Box::new(Value::Fn(FnType::Builtin(BuiltinFn {
             name: "print".to_string(),
-            return_type: Box::new(Value::Nothing),
+            return_type: ValueType::Nothing,
         }))),
     );
     scope.insert(
         "println".to_string(),
         Box::new(Value::Fn(FnType::Builtin(BuiltinFn {
             name: "println".to_string(),
-            return_type: Box::new(Value::Nothing),
+            return_type: ValueType::Nothing,
         }))),
     );
     scope.insert(
         "max".to_string(),
         Box::new(Value::Fn(FnType::Builtin(BuiltinFn {
             name: "max".to_string(),
-            return_type: Box::new(Value::Int(0)), // FIXME: Actually return the max
+            return_type: ValueType::Int, // FIXME: Actually return the max
         }))),
     );
     scope.insert(
@@ -33,7 +33,7 @@ pub fn make_builtins(scope: &mut HashMap<String, Box<Value>>) {
     );
 }
 
-pub fn call_builtin(name: &str, args: Vec<Value>, return_type: Value) -> Value {
+pub fn call_builtin(name: &str, args: Vec<Value>, return_type: ValueType) -> Value {
     match name {
         "print" => {
             if args.len() > 1 {
@@ -47,7 +47,7 @@ pub fn call_builtin(name: &str, args: Vec<Value>, return_type: Value) -> Value {
             } else {
                 print!("{}", args[0]);
             }
-            return_type
+            Value::Nothing
         }
         "println" => {
             if args.len() > 1 {
@@ -62,7 +62,7 @@ pub fn call_builtin(name: &str, args: Vec<Value>, return_type: Value) -> Value {
             } else {
                 println!("{}", args[0]);
             }
-            return_type
+            Value::Nothing
         }
         "max" => match args[0] {
             Value::Int(a) => {
