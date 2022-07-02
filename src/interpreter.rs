@@ -109,6 +109,9 @@ fn call_fn(name: &str, passed_args: Vec<Value>, scope: &mut Scope) -> Value {
                 for ((index, name), _) in args {
                     new_scope.insert(name.clone(), Box::new(passed_args[*index].clone()));
                 }
+                for expr in body {
+                    interpret_expr(expr, &mut new_scope);
+                };
                 Value::Nothing
             }
             _ => {
