@@ -82,10 +82,10 @@ impl Display for UserFn {
 impl Display for Value {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
-            Value::Int(i) => write!(f, "{}", i),
-            Value::String(s) => write!(f, "{}", s),
-            Value::Bool(b) => write!(f, "{}", b),
-            Value::Fn(_f) => Ok(()),
+            Value::Int(i) => write!(f, "{i}"),
+            Value::String(s) => write!(f, "{s}"),
+            Value::Bool(b) => write!(f, "{b}"),
+            Value::Fn(_) => Ok(()),
             Value::Nothing => write!(f, "Nothing"),
         }
     }
@@ -122,10 +122,15 @@ fn call_fn(name: &str, passed_args: Vec<Value>, scope: &mut Scope) -> Value {
                 args,
                 body,
                 return_type,
-                ..
             })) => {
                 let mut new_scope = scope.clone();
-                args.iter().for_each(|((index, name), _)| {
+                args.iter().for_each(|((index, name), value_type)| {
+                    if value_type != &passed_args[*index].get_type() {
+                        panic!(
+                            "Invalid value passed to function {name}. Expected {value_type:?}, got {:?}",
+                            passed_args[*index].get_type()
+                        );
+                    }
                     new_scope.insert(name.clone(), Box::new(passed_args[*index].clone()));
                 });
                 for expr in body {

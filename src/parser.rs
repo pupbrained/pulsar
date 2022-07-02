@@ -73,22 +73,18 @@ pub enum Expr {
 impl Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Expr::Token(t) => write!(f, "{}", t),
-            Expr::BinaryExpr { op, lhs, rhs } => write!(f, "{} {} {}", lhs, op, rhs),
-            Expr::FnCall { name, args } => write!(f, "{}({:?})", name, args),
+            Expr::Token(t) => write!(f, "{t}"),
+            Expr::BinaryExpr { op, lhs, rhs } => write!(f, "{lhs} {op} {rhs}"),
+            Expr::FnCall { name, args } => write!(f, "{name}({args:?})"),
             Expr::FnDef {
                 name,
                 args,
                 body,
                 return_type,
             } => {
-                write!(
-                    f,
-                    "func {}({:?}) {{{:?}}} -> {:?}",
-                    name, args, body, return_type
-                )
+                write!(f, "func {name}({args:?}) {{{body:?}}} -> {return_type:?}")
             }
-            Expr::Return { inner } => write!(f, "return {}", inner),
+            Expr::Return { inner } => write!(f, "return {inner}"),
         }
     }
 }

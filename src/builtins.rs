@@ -39,9 +39,9 @@ pub fn call_builtin(name: &str, args: Vec<Value>) -> Value {
             if args.len() > 1 {
                 for arg in &args {
                     if arg == &args[args.len() - 1] {
-                        print!("{}", arg);
+                        print!("{arg}");
                     } else {
-                        print!("{}, ", arg);
+                        print!("{arg}, ");
                     }
                 }
             } else {
@@ -53,9 +53,9 @@ pub fn call_builtin(name: &str, args: Vec<Value>) -> Value {
             if args.len() > 1 {
                 for arg in &args {
                     if arg == &args[args.len() - 1] {
-                        print!("{}", arg);
+                        print!("{arg}");
                     } else {
-                        print!("{}, ", arg);
+                        print!("{arg}, ");
                     }
                 }
                 println!();

@@ -65,10 +65,10 @@ impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Token::SetVal => write!(f, ":="),
-            Token::String(s) => write!(f, "{}", s),
-            Token::Identifier(s) => write!(f, "{}", s),
-            Token::Num(i) => write!(f, "{}", i),
-            Token::Bool(b) => write!(f, "{}", b),
+            Token::String(s) => write!(f, "{s}"),
+            Token::Identifier(s) => write!(f, "{s}"),
+            Token::Num(i) => write!(f, "{i}"),
+            Token::Bool(b) => write!(f, "{b}"),
             Token::LParen => write!(f, "("),
             Token::RParen => write!(f, ")"),
             Token::LBrace => write!(f, "{{"),
@@ -80,8 +80,8 @@ impl Display for Token {
             Token::Func => write!(f, "func"),
             Token::ReturnType => write!(f, "->"),
             Token::Return => write!(f, "return"),
-            Token::Type(s) => write!(f, "{}", s),
-            Token::Operator(s) => write!(f, "{}", s),
+            Token::Type(s) => write!(f, "{s}"),
+            Token::Operator(s) => write!(f, "{s}"),
             Token::Error => write!(f, "Error"),
         }
     }
