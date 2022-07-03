@@ -1,6 +1,7 @@
-use std::{collections::HashMap, fmt::Display, iter::Peekable, slice::Iter};
-
-use crate::lexer::Token;
+use {
+    crate::lexer::Token,
+    std::{collections::HashMap, fmt::Display, iter::Peekable, slice::Iter},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Parser {
@@ -52,25 +53,25 @@ pub enum Expr {
     Token(Token),
     BinaryExpr {
         op: Operator,
-        lhs: Box<Expr>,
-        rhs: Box<Expr>,
+        lhs: Box<Self>,
+        rhs: Box<Self>,
     },
     FnCall {
         name: String,
-        args: Vec<Expr>,
+        args: Vec<Self>,
     },
     FnDef {
         name: String,
-        args: HashMap<(usize, String), Expr>,
-        body: Vec<Expr>,
+        args: HashMap<(usize, String), Self>,
+        body: Vec<Self>,
         return_type: String,
     },
     If {
-        cond: Box<Expr>,
-        body: Vec<Expr>,
+        cond: Box<Self>,
+        body: Vec<Self>,
     },
     Return {
-        inner: Box<Expr>,
+        inner: Box<Self>,
     },
 }
 
@@ -197,7 +198,7 @@ impl Parser {
                 sc_check = false;
                 Self::parse_if(tokens)
             }
-            _ => (Expr::Token(Token::Error), tokens),
+            _ => panic!("Unexpected token, got {:?}", tokens.peek()),
         };
         if sc_check {
             if tokens_new.peek() == Some(&&Token::Semicolon) {
@@ -337,7 +338,7 @@ impl Parser {
                         },
                         tokens_newer,
                     );
-                };
+                }
                 tokens = tokens_newer;
             },
             _ => panic!("Expected brace"),

@@ -26,7 +26,7 @@ pub enum Value {
     String(String),
     Bool(bool),
     Fn(FnType),
-    Return(Box<Value>),
+    Return(Box<Self>),
     Nothing,
 }
 
@@ -94,7 +94,7 @@ impl Display for Value {
 }
 
 impl Value {
-    pub fn get_type(&self) -> ValueType {
+    fn get_type(&self) -> ValueType {
         match self {
             Value::Int(_) => ValueType::Int,
             Value::String(_) => ValueType::String,
@@ -138,7 +138,6 @@ fn call_fn(name: &str, passed_args: Vec<Value>, scope: &mut Scope) -> Value {
                 });
                 for expr in body {
                     let returned_val_from_expr = interpret_expr(expr, &mut new_scope);
-                    println!("GOT: {:?}", returned_val_from_expr);
                     if let Value::Return(val) = returned_val_from_expr {
                         if *return_type != val.get_type() {
                             panic!(
@@ -322,7 +321,6 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
                 let mut new_scope = scope.clone();
                 for expr in body {
                     let value = interpret_expr(expr, &mut new_scope);
-                    println!("GOT IN IF: {:?} FOR {}", value, expr);
                     if let Value::Return(_) = value {
                         return value;
                     }

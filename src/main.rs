@@ -8,7 +8,6 @@ use {
     interpreter::Interpreter,
     lexer::Token,
     logos::Logos,
-    parser::Parser as PulsarParser,
     std::{fs::File, io::Read},
 };
 
@@ -29,5 +28,6 @@ fn read_file() -> String {
 }
 
 fn main() {
-    Interpreter::new(PulsarParser::new(Token::lexer(&read_file()).collect()).parse()).run();
+    use parser::Parser;
+    Interpreter::new(Parser::new(Token::lexer(&read_file()).collect()).parse()).run();
 }

@@ -1,6 +1,7 @@
-use std::collections::HashMap;
-
-use crate::interpreter::{BuiltinFn, FnType, Value, ValueType};
+use {
+    crate::interpreter::{BuiltinFn, FnType, Value, ValueType},
+    std::collections::HashMap,
+};
 
 pub fn make_builtins(scope: &mut HashMap<String, Box<Value>>) {
     scope.insert(

@@ -11,5 +11,5 @@ func do_thing(bool unused) -> int {
      return 1;
 }
 
-println("TRUE:", do_thing(true));
-println("FALSE:", do_thing(false));
+println(do_thing(true));
+println(do_thing(false));
