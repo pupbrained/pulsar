@@ -325,22 +325,24 @@ impl Parser {
         tokens = tokens_after_cond;
         let mut body: Vec<Expr> = vec![];
         match tokens.peek() {
-            Some(Token::LBrace) => loop {
+            Some(Token::LBrace) => {
                 tokens.next();
-                let (expr, tokens_newer) = Self::parse_expr(tokens, true);
-                body.push(expr);
-                if let Some(Token::RBrace) = tokens_newer.peek() {
-                    tokens_newer.next();
-                    return (
-                        Expr::If {
-                            cond: Box::new(cond),
-                            body,
-                        },
-                        tokens_newer,
-                    );
+                loop {
+                    let (expr, tokens_new) = Self::parse_expr(tokens, true);
+                    body.push(expr);
+                    if let Some(Token::RBrace) = tokens_new.peek() {
+                        tokens_new.next();
+                        return (
+                            Expr::If {
+                                cond: Box::new(cond),
+                                body,
+                            },
+                            tokens_new,
+                        );
+                    }
+                    tokens = tokens_new;
                 }
-                tokens = tokens_newer;
-            },
+            }
             _ => panic!("Expected brace"),
         }
     }
