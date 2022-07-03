@@ -330,15 +330,21 @@ impl Parser {
                 loop {
                     let (expr, tokens_new) = Self::parse_expr(tokens, true);
                     body.push(expr);
-                    if let Some(Token::RBrace) = tokens_new.peek() {
-                        tokens_new.next();
-                        return (
-                            Expr::If {
-                                cond: Box::new(cond),
-                                body,
-                            },
-                            tokens_new,
-                        );
+                    match tokens_new.peek() {
+                        Some(Token::RBrace) => {
+                            tokens_new.next();
+                            return (
+                                Expr::If {
+                                    cond: Box::new(cond),
+                                    body,
+                                },
+                                tokens_new,
+                            );
+                        }
+                        Some(Token::Else) => {
+
+                        }
+                        _ => (),
                     }
                     tokens = tokens_new;
                 }
