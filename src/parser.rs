@@ -334,12 +334,24 @@ impl Parser {
     ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
         let (cond, tokens_after_cond) = Self::parse_expr(tokens, false);
         let mut else_body: Option<Vec<Expr>> = None;
-        let (body, tokens) = Self::handle_block(tokens_after_cond);
-        // if tokens.peek() == Some(&&Token::Else) {
-        //     tokens.next();
-        //     match tokens.peek {
-        //     };
-        // };
+        let (body, mut tokens) = Self::handle_block(tokens_after_cond);
+        if tokens.peek() == Some(&&Token::Else) {
+            tokens.next();
+            match tokens.peek() {
+                Some(Token::LBrace) => {
+                    let (exprs, tokens_new) = Self::handle_block(tokens);
+                    else_body = Some(exprs);
+                    tokens = tokens_new;
+                }
+                Some(Token::If) => {
+                    tokens.next();
+                    let (expr, tokens_new) = Self::parse_if(tokens);
+                    else_body = Some(vec![expr]);
+                    tokens = tokens_new;
+                },
+                _ => panic!("Expect {{, or if"),
+            };
+        };
         (
             Expr::If {
                 cond: Box::new(cond),
