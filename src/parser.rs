@@ -69,6 +69,7 @@ pub enum Expr {
     If {
         cond: Box<Self>,
         body: Vec<Self>,
+        else_body: Option<Box<Self>>,
     },
     Return {
         inner: Box<Self>,
@@ -89,7 +90,11 @@ impl Display for Expr {
             } => {
                 write!(f, "func {name}({args:?}) {{{body:?}}} -> {return_type:?}")
             }
-            Expr::If { cond, body } => write!(f, "if {cond} {{{body:?}}}"),
+            Expr::If {
+                cond,
+                body,
+                else_body,
+            } => write!(f, "if {cond} {{{body:?}}} else {{{else_body:?}}}"),
             Expr::Return { inner } => write!(f, "return {inner}"),
         }
     }
@@ -330,21 +335,32 @@ impl Parser {
                 loop {
                     let (expr, tokens_new) = Self::parse_expr(tokens, true);
                     body.push(expr);
-                    match tokens_new.peek() {
-                        Some(Token::RBrace) => {
-                            tokens_new.next();
-                            return (
-                                Expr::If {
-                                    cond: Box::new(cond),
-                                    body,
-                                },
-                                tokens_new,
-                            );
+                    if let Some(Token::RBrace) = tokens_new.peek() {
+                        tokens_new.next();
+                        match tokens_new.peek() {
+                            Some(Token::Else) => {
+                                tokens_new.next();
+                                let (else_body, tokens_newer) = Self::parse_if(tokens_new);
+                                return (
+                                    Expr::If {
+                                        cond: Box::new(cond),
+                                        body,
+                                        else_body: Some(Box::new(else_body)),
+                                    },
+                                    tokens_newer,
+                                );
+                            }
+                            _ => {
+                                return (
+                                    Expr::If {
+                                        cond: Box::new(cond),
+                                        body,
+                                        else_body: None,
+                                    },
+                                    tokens_new,
+                                )
+                            }
                         }
-                        Some(Token::Else) => {
-
-                        }
-                        _ => (),
                     }
                     tokens = tokens_new;
                 }
