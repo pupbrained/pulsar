@@ -69,7 +69,7 @@ pub enum Expr {
     If {
         cond: Box<Self>,
         body: Vec<Self>,
-        else_body: Option<Box<Self>>,
+        else_body: Option<Vec<Self>>,
     },
     Return {
         inner: Box<Self>,
@@ -256,18 +256,19 @@ impl Parser {
                             idx += 1;
                         }
                     }
-                    let (body, tokens_new) = match tokens.next() {
+                    let (body, tokens_new) = match tokens.peek() {
                         Some(Token::ReturnType) => {
+                            tokens.next();
                             return_type = match tokens.next() {
                                 Some(Token::Type(t)) => t.clone(),
                                 _ => panic!("Expected type"),
                             };
-                            match tokens.next() {
-                                Some(Token::LBrace) => Self::handle_func_block(tokens),
+                            match tokens.peek() {
+                                Some(Token::LBrace) => Self::handle_block(tokens),
                                 _ => panic!("Expected brace"),
                             }
                         }
-                        Some(Token::LBrace) => Self::handle_func_block(tokens),
+                        Some(Token::LBrace) => Self::handle_block(tokens),
                         _ => panic!("Expected a return statement or brace"),
                     };
                     (
@@ -286,19 +287,24 @@ impl Parser {
         }
     }
 
-    fn handle_func_block<'a>(
+    fn handle_block<'a>(
         mut tokens: &'a mut Peekable<Iter<'a, Token>>,
     ) -> (Vec<Expr>, &'a mut Peekable<Iter<'a, Token>>) {
         let mut exprs = Vec::new();
-        loop {
-            let (expr, tokens_new) = Self::parse_expr(tokens, true);
-            exprs.push(expr);
-            if let Some(Token::RBrace) = tokens_new.peek() {
-                tokens_new.next();
-                return (exprs, tokens_new);
-            };
-            tokens = tokens_new;
-        }
+        if tokens.peek() == Some(&&Token::LBrace) {
+            tokens.next();
+            loop {
+                let (expr, tokens_new) = Self::parse_expr(tokens, true);
+                exprs.push(expr);
+                if let Some(Token::RBrace) = tokens_new.peek() {
+                    tokens_new.next();
+                    return (exprs, tokens_new);
+                };
+                tokens = tokens_new;
+            }
+        } else {
+            panic!("Expected '{{', got {:?}", tokens.peek());
+        };
     }
 
     fn parse_fn_call<'a>(
@@ -327,44 +333,20 @@ impl Parser {
         mut tokens: &'a mut Peekable<Iter<'a, Token>>,
     ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
         let (cond, tokens_after_cond) = Self::parse_expr(tokens, false);
-        tokens = tokens_after_cond;
-        let mut body: Vec<Expr> = vec![];
-        match tokens.peek() {
-            Some(Token::LBrace) => {
-                tokens.next();
-                loop {
-                    let (expr, tokens_new) = Self::parse_expr(tokens, true);
-                    body.push(expr);
-                    if let Some(Token::RBrace) = tokens_new.next() {
-                        match tokens_new.peek() {
-                            Some(Token::Else) => {
-                                tokens_new.next();
-                                let (else_body, tokens_newer) = Self::parse_if(tokens_new);
-                                return (
-                                    Expr::If {
-                                        cond: Box::new(cond),
-                                        body,
-                                        else_body: Some(Box::new(else_body)),
-                                    },
-                                    tokens_newer,
-                                );
-                            }
-                            _ => {
-                                return (
-                                    Expr::If {
-                                        cond: Box::new(cond),
-                                        body,
-                                        else_body: None,
-                                    },
-                                    tokens_new,
-                                )
-                            }
-                        }
-                    }
-                    tokens = tokens_new;
-                }
-            }
-            _ => panic!("Expected brace, got {:?}", tokens.peek()),
-        }
+        let mut else_body: Option<Vec<Expr>> = None;
+        let (body, tokens) = Self::handle_block(tokens_after_cond);
+        // if tokens.peek() == Some(&&Token::Else) {
+        //     tokens.next();
+        //     match tokens.peek {
+        //     };
+        // };
+        (
+            Expr::If {
+                cond: Box::new(cond),
+                body,
+                else_body,
+            },
+            tokens,
+        )
     }
 }
