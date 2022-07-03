@@ -7,10 +7,7 @@ func do_thing(bool unused) -> int {
      if unused == true {
           println("This is true when in the function");
           return x + y;
-     } else {
-          println("This is false when in the function");
-          return y - x;
-     }
+    }
 }
 
 println(do_thing(true));
