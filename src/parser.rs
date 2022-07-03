@@ -158,20 +158,20 @@ impl Parser {
                 }
                 _ => (Expr::Token(Token::Identifier(ident.into())), tokens),
             },
-            Some(Token::Num(num)) => match tokens.peek() {
+            Some(Token::Int(i)) => match tokens.peek() {
                 Some(Token::Operator(op)) => {
                     tokens.next();
                     let (expr, tokens_new) = Self::parse_expr(tokens, false);
                     (
                         Expr::BinaryExpr {
                             op: Operator::from_str(op),
-                            lhs: Box::new(Expr::Token(Token::Num(*num))),
+                            lhs: Box::new(Expr::Token(Token::Int(*i))),
                             rhs: Box::new(expr),
                         },
                         tokens_new,
                     )
                 }
-                _ => (Expr::Token(Token::Num(*num)), tokens),
+                _ => (Expr::Token(Token::Int(*i)), tokens),
             },
             Some(Token::Bool(bool)) => (Expr::Token(Token::Bool(*bool)), tokens),
             Some(Token::String(string)) => match tokens.peek() {

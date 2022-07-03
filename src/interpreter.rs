@@ -272,7 +272,7 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
             }
         }
         Expr::Token(x) => match x {
-            Token::Num(x) => Value::Int(*x),
+            Token::Int(x) => Value::Int(*x),
             Token::String(x) => Value::String(x.to_string()),
             Token::Bool(x) => Value::Bool(*x),
             Token::Identifier(x) => {
@@ -325,7 +325,7 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
                         _ => continue,
                     }
                 }
-                Value::Nothing
+                unreachable!("If statement should always return")
             } else {
                 Value::Nothing
             }

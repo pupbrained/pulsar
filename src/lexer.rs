@@ -12,7 +12,7 @@ pub enum Token {
     Identifier(String),
 
     #[regex("[0-9]+", |lex| lex.slice().parse())]
-    Num(i64),
+    Int(i64),
 
     #[regex("true|false", |lex| lex.slice().parse())]
     Bool(bool),
@@ -76,7 +76,7 @@ impl Display for Token {
             Token::SetVal => write!(f, ":="),
             Token::String(s) => write!(f, "{s}"),
             Token::Identifier(s) => write!(f, "{s}"),
-            Token::Num(i) => write!(f, "{i}"),
+            Token::Int(i) => write!(f, "{i}"),
             Token::Bool(b) => write!(f, "{b}"),
             Token::If => write!(f, "if"),
             Token::Elif => write!(f, "elif"),
