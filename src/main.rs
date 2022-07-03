@@ -29,7 +29,5 @@ fn read_file() -> String {
 
 fn main() {
     use parser::Parser;
-    let parsed = Parser::new(Token::lexer(&read_file()).collect()).parse();
-    println!("{:#?}", parsed);
-    // Interpreter::new(parsed).run();
+    Interpreter::new(Parser::new(Token::lexer(&read_file()).collect()).parse()).run();
 }

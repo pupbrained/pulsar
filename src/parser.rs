@@ -330,7 +330,7 @@ impl Parser {
     }
 
     fn parse_if<'a>(
-        mut tokens: &'a mut Peekable<Iter<'a, Token>>,
+        tokens: &'a mut Peekable<Iter<'a, Token>>,
     ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
         let (cond, tokens_after_cond) = Self::parse_expr(tokens, false);
         let mut else_body: Option<Vec<Expr>> = None;
@@ -348,7 +348,7 @@ impl Parser {
                     let (expr, tokens_new) = Self::parse_if(tokens);
                     else_body = Some(vec![expr]);
                     tokens = tokens_new;
-                },
+                }
                 _ => panic!("Expect {{, or if"),
             };
         };
