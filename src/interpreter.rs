@@ -320,12 +320,11 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
             if interpret_expr(cond, scope) == Value::Bool(true) {
                 let mut new_scope = scope.clone();
                 for expr in body {
-                    match interpret_expr(expr, &mut new_scope) {
-                        Value::Return(val) => return *val,
-                        _ => println!("continuing, {}", expr),
+                    if let Value::Return(val) = interpret_expr(expr, &mut new_scope) {
+                        return *val;
                     }
                 }
-                unreachable!("If statement should always return")
+                Value::Nothing
             } else {
                 Value::Nothing
             }
