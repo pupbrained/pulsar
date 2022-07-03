@@ -138,6 +138,7 @@ fn call_fn(name: &str, passed_args: Vec<Value>, scope: &mut Scope) -> Value {
                 });
                 for expr in body {
                     let returned_val_from_expr = interpret_expr(expr, &mut new_scope);
+                    println!("GOT: {:?}", returned_val_from_expr);
                     if let Value::Return(val) = returned_val_from_expr {
                         if *return_type != val.get_type() {
                             panic!(
@@ -320,8 +321,10 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
             if interpret_expr(cond, scope) == Value::Bool(true) {
                 let mut new_scope = scope.clone();
                 for expr in body {
-                    if let Value::Return(val) = interpret_expr(expr, &mut new_scope) {
-                        return *val;
+                    let value = interpret_expr(expr, &mut new_scope);
+                    println!("GOT IN IF: {:?} FOR {}", value, expr);
+                    if let Value::Return(_) = value {
+                        return value;
                     }
                 }
                 Value::Nothing
