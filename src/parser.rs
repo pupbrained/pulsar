@@ -326,7 +326,8 @@ impl Parser {
         match tokens.peek() {
             Some(Token::LBrace) => loop {
                 tokens.next();
-                let (expr, tokens_newer) = Self::parse_expr(tokens, false);
+                let (expr, tokens_newer) = Self::parse_expr(tokens, true);
+                println!("{:?}", tokens_newer.peek());
                 body.push(expr);
                 if let Some(Token::RBrace) = tokens_newer.peek() {
                     return (

@@ -322,7 +322,7 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
                 for expr in body {
                     match interpret_expr(expr, &mut new_scope) {
                         Value::Return(val) => return *val,
-                        _ => continue,
+                        _ => println!("continuing, {}", expr),
                     }
                 }
                 unreachable!("If statement should always return")

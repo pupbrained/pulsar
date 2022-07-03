@@ -1,14 +1,8 @@
 func do_thing(bool unused) -> int {
-     x := 1;
-     y := 3;
-     println("This is x when in the function: " + x);
-     println("This is y when in the function: " + y);
-     println("This is unused when in the function: " + unused);
      if unused == true {
           println("This is true when in the function");
-          return x + y;
      }
+     return x + y;
 }
 
 println(do_thing(true));
-println(do_thing(false));
