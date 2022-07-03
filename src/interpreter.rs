@@ -316,11 +316,7 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
             scope.insert(name.clone(), Box::new(funcdef));
             Value::Nothing
         }
-        Expr::If {
-            cond,
-            body,
-            else_body,
-        } => {
+        Expr::If { cond, body, .. } => {
             if interpret_expr(cond, scope) == Value::Bool(true) {
                 let mut new_scope = scope.clone();
                 for expr in body {

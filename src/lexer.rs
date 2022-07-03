@@ -20,9 +20,6 @@ pub enum Token {
     #[token("if")]
     If,
 
-    #[token("elif")]
-    Elif,
-
     #[token("else")]
     Else,
 
@@ -79,7 +76,6 @@ impl Display for Token {
             Token::Int(i) => write!(f, "{i}"),
             Token::Bool(b) => write!(f, "{b}"),
             Token::If => write!(f, "if"),
-            Token::Elif => write!(f, "elif"),
             Token::Else => write!(f, "else"),
             Token::LParen => write!(f, "("),
             Token::RParen => write!(f, ")"),

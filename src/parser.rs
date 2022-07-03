@@ -203,7 +203,7 @@ impl Parser {
                 sc_check = false;
                 Self::parse_if(tokens)
             }
-            _ => panic!("Unexpected token, got {:?}", tokens.peek()),
+            _ => (Expr::Token(Token::Error), tokens),
         };
         if sc_check {
             if tokens_new.peek() == Some(&&Token::Semicolon) {
@@ -335,8 +335,7 @@ impl Parser {
                 loop {
                     let (expr, tokens_new) = Self::parse_expr(tokens, true);
                     body.push(expr);
-                    if let Some(Token::RBrace) = tokens_new.peek() {
-                        tokens_new.next();
+                    if let Some(Token::RBrace) = tokens_new.next() {
                         match tokens_new.peek() {
                             Some(Token::Else) => {
                                 tokens_new.next();
@@ -365,7 +364,7 @@ impl Parser {
                     tokens = tokens_new;
                 }
             }
-            _ => panic!("Expected brace"),
+            _ => panic!("Expected brace, got {:?}", tokens.peek()),
         }
     }
 }
