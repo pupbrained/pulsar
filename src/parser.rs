@@ -20,7 +20,7 @@ pub enum Operator {
     Gt,
     Le,
     Ge,
-    SetVal,
+    SetVal(Option<String>),
 }
 
 impl Operator {
@@ -36,7 +36,6 @@ impl Operator {
             ">" => Self::Gt,
             "<=" => Self::Le,
             ">=" => Self::Ge,
-            ":=" => Self::SetVal,
             _ => panic!("Unknown operator"),
         }
     }
@@ -55,7 +54,7 @@ impl Display for Operator {
             Operator::Gt => write!(f, ">"),
             Operator::Le => write!(f, "<="),
             Operator::Ge => write!(f, ">="),
-            Operator::SetVal => write!(f, ":="),
+            Operator::SetVal(_) => write!(f, ":="),
         }
     }
 }
@@ -151,7 +150,7 @@ impl Parser {
                     let (expr, tokens_new) = Self::parse_expr(tokens, false);
                     (
                         Expr::BinaryExpr {
-                            op: Operator::SetVal,
+                            op: Operator::SetVal(None),
                             lhs: Box::new(Expr::Token(Token::Identifier(ident.into()))),
                             rhs: Box::new(expr),
                         },
@@ -236,7 +235,7 @@ impl Parser {
                         let (expr, tokens_new) = Self::parse_expr(tokens, false);
                         (
                             Expr::BinaryExpr {
-                                op: Operator::SetVal,
+                                op: Operator::SetVal(Some(t.clone())),
                                 lhs: Box::new(Expr::Token(Token::Identifier(i.into()))),
                                 rhs: Box::new(expr),
                             },
