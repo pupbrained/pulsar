@@ -1,13 +1,13 @@
-use logos::Span;
 
 use {
     crate::lexer::Token,
-    std::{collections::HashMap, fmt::Display, iter::Peekable, slice::Iter},
+    logos::{Span, Lexer},
+    std::{collections::HashMap, fmt::Display, iter::Peekable},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Parser<'a> {
-    tokens: Peekable<Iter<'a, Token>>,
+    tokens: &'a mut Peekable<Lexer<'a, Token>>,
 }
 
 #[derive(Debug)]
@@ -119,29 +119,25 @@ impl Display for Expr {
     }
 }
 
-impl Parser<'_> {
-    pub fn new(tokens: Peekable<Iter<Token>>) -> Parser {
+impl<'b> Parser<'b> {
+    pub fn new(tokens: &'b mut Peekable<Lexer<'b, Token>>) -> Parser<'b> {
         Parser { tokens }
     }
 
-    pub fn parse(&self) -> Result<Vec<Expr>, ParseError> {
+    pub fn parse(&'b mut self) -> Result<Vec<Expr>, ParseError> {
         let mut exprs = Vec::new();
-        let mut tokens = &mut self.tokens;
-        while {
-            let this = &tokens.clone();
-            this.len() != 0
-        } {
-            let (expr, tokens_new) = Self::parse_expr(tokens, true)?;
-            tokens = tokens_new;
+        while self.tokens.peek().is_some() {
+            let (expr, tokens_new) = Self::parse_expr(&mut self.tokens, true)?;
+            self.tokens = tokens_new;
             exprs.push(expr);
         }
         Ok(exprs)
     }
 
     fn parse_expr<'a>(
-        tokens: &'a mut Peekable<Iter<'a, Token>>,
+        tokens: &'a mut Peekable<Lexer<'a, Token>>,
         mut sc_check: bool,
-    ) -> Result<(Expr, &'a mut Peekable<Iter<'a, Token>>), ParseError> {
+    ) -> Result<(Expr, &'a mut Peekable<Lexer<'a, Token>>), ParseError> {
         let (expr, tokens_new) = match tokens.next() {
             Some(Token::Return) => {
                 let (expr, tokens_new) = Self::parse_expr(tokens, false)?;
@@ -190,13 +186,13 @@ impl Parser<'_> {
                     (
                         Expr::BinaryExpr {
                             op: Operator::from_str(op),
-                            lhs: Box::new(Expr::Token(Token::Int(*i))),
+                            lhs: Box::new(Expr::Token(Token::Int(i))),
                             rhs: Box::new(expr),
                         },
                         tokens_new,
                     )
                 }
-                _ => (Expr::Token(Token::Int(*i)), tokens),
+                _ => (Expr::Token(Token::Int(i)), tokens),
             },
             Some(Token::Float(f)) => match tokens.peek() {
                 Some(Token::Operator(op)) => {
@@ -205,15 +201,15 @@ impl Parser<'_> {
                     (
                         Expr::BinaryExpr {
                             op: Operator::from_str(op),
-                            lhs: Box::new(Expr::Token(Token::Float(*f))),
+                            lhs: Box::new(Expr::Token(Token::Float(f))),
                             rhs: Box::new(expr),
                         },
                         tokens_new,
                     )
                 }
-                _ => (Expr::Token(Token::Float(*f)), tokens),
+                _ => (Expr::Token(Token::Float(f)), tokens),
             },
-            Some(Token::Bool(bool)) => (Expr::Token(Token::Bool(*bool)), tokens),
+            Some(Token::Bool(bool)) => (Expr::Token(Token::Bool(bool)), tokens),
             Some(Token::String(string)) => match tokens.peek() {
                 Some(Token::Operator(op)) => {
                     tokens.next();
@@ -282,8 +278,8 @@ impl Parser<'_> {
     }
 
     fn parse_fn_def<'a>(
-        tokens: &'a mut Peekable<Iter<'a, Token>>,
-    ) -> Result<(Expr, &'a mut Peekable<Iter<'a, Token>>), ParseError> {
+        tokens: &'a mut Peekable<Lexer<'a, Token>>,
+    ) -> Result<(Expr, &'a mut Peekable<Lexer<'a, Token>>), ParseError> {
         match tokens.next() {
             Some(Token::Identifier(ident)) => match tokens.next() {
                 Some(Token::LParen) => {
@@ -383,8 +379,8 @@ impl Parser<'_> {
     }
 
     fn handle_block<'a>(
-        mut tokens: &'a mut Peekable<Iter<'a, Token>>,
-    ) -> Result<(Vec<Expr>, &'a mut Peekable<Iter<'a, Token>>), ParseError> {
+        mut tokens: &'a mut Peekable<Lexer<'a, Token>>,
+    ) -> Result<(Vec<Expr>, &'a mut Peekable<Lexer<'a, Token>>), ParseError> {
         let mut exprs = Vec::new();
         if tokens.peek() == Some(&&Token::LBrace) {
             tokens.next();
@@ -407,8 +403,8 @@ impl Parser<'_> {
 
     fn parse_fn_call<'a>(
         ident: String,
-        mut tokens: &'a mut Peekable<Iter<'a, Token>>,
-    ) -> Result<(Expr, &'a mut Peekable<Iter<'a, Token>>), ParseError> {
+        mut tokens: &'a mut Peekable<Lexer<'a, Token>>,
+    ) -> Result<(Expr, &'a mut Peekable<Lexer<'a, Token>>), ParseError> {
         let mut args = Vec::new();
         if tokens.peek() == Some(&&Token::RParen) {
             tokens.next();
@@ -435,8 +431,8 @@ impl Parser<'_> {
     }
 
     fn parse_if<'a>(
-        tokens: &'a mut Peekable<Iter<'a, Token>>,
-    ) -> Result<(Expr, &'a mut Peekable<Iter<'a, Token>>), ParseError> {
+        tokens: &'a mut Peekable<Lexer<'a, Token>>,
+    ) -> Result<(Expr, &'a mut Peekable<Lexer<'a, Token>>), ParseError> {
         let (cond, tokens_after_cond) = Self::parse_expr(tokens, false)?;
         let mut else_body: Option<Vec<Expr>> = None;
         let (body, mut tokens) = Self::handle_block(tokens_after_cond)?;
