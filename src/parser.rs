@@ -124,7 +124,7 @@ impl<'b> Parser<'b> {
         Parser { tokens }
     }
 
-    pub fn parse(&'b self) -> Result<Vec<Expr>, ParseError> {
+    pub fn parse(&'b mut self) -> Result<Vec<Expr>, ParseError> {
         let mut exprs = Vec::new();
         while self.tokens.peek().is_some() {
             let (expr, tokens_new) = Self::parse_expr(&mut self.tokens, true)?;
@@ -186,13 +186,13 @@ impl<'b> Parser<'b> {
                     (
                         Expr::BinaryExpr {
                             op: Operator::from_str(op),
-                            lhs: Box::new(Expr::Token(Token::Int(*i))),
+                            lhs: Box::new(Expr::Token(Token::Int(i))),
                             rhs: Box::new(expr),
                         },
                         tokens_new,
                     )
                 }
-                _ => (Expr::Token(Token::Int(*i)), tokens),
+                _ => (Expr::Token(Token::Int(i)), tokens),
             },
             Some(Token::Float(f)) => match tokens.peek() {
                 Some(Token::Operator(op)) => {
@@ -201,15 +201,15 @@ impl<'b> Parser<'b> {
                     (
                         Expr::BinaryExpr {
                             op: Operator::from_str(op),
-                            lhs: Box::new(Expr::Token(Token::Float(*f))),
+                            lhs: Box::new(Expr::Token(Token::Float(f))),
                             rhs: Box::new(expr),
                         },
                         tokens_new,
                     )
                 }
-                _ => (Expr::Token(Token::Float(*f)), tokens),
+                _ => (Expr::Token(Token::Float(f)), tokens),
             },
-            Some(Token::Bool(bool)) => (Expr::Token(Token::Bool(*bool)), tokens),
+            Some(Token::Bool(bool)) => (Expr::Token(Token::Bool(bool)), tokens),
             Some(Token::String(string)) => match tokens.peek() {
                 Some(Token::Operator(op)) => {
                     tokens.next();
