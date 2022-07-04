@@ -176,7 +176,7 @@ fn get_valuetype_from(name: &str) -> ValueType {
 fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
     match expr {
         Expr::BinaryExpr {
-            op: Operator::SetVal,
+            op: Operator::SetVal(expected_type),
             lhs,
             rhs,
         } => {
