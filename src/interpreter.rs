@@ -91,7 +91,20 @@ impl Display for Value {
             Value::Bool(b) => write!(f, "{b}"),
             Value::Fn(_) => Ok(()),
             Value::Return(v) => v.fmt(f),
-            Value::Nothing => write!(f, "Nothing"),
+            Value::Nothing => write!(f, "nothing"),
+        }
+    }
+}
+
+impl Display for ValueType {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            ValueType::Int => write!(f, "int"),
+            ValueType::Float => write!(f, "float"),
+            ValueType::String => write!(f, "string"),
+            ValueType::Bool => write!(f, "bool"),
+            ValueType::Fn => write!(f, "fn"),
+            ValueType::Nothing => write!(f, "nothing"),
         }
     }
 }
@@ -119,7 +132,7 @@ fn call_fn(name: &str, passed_args: Vec<Value>, scope: &mut Scope) -> Value {
                     returned_value
                 } else {
                     panic!(
-                        "Invalid value returned from builtin function {name}. Expected {return_type:?}, got {:?}",
+                        "Invalid value returned from builtin function {name}. Expected {return_type}, got {}",
                         returned_value.get_type()
                     );
                 }
@@ -134,7 +147,7 @@ fn call_fn(name: &str, passed_args: Vec<Value>, scope: &mut Scope) -> Value {
                 args.iter().for_each(|((index, name), value_type)| {
                     if value_type != &passed_args[*index].get_type() {
                         panic!(
-                            "Invalid value passed to function {name}. Expected {value_type:?}, got {:?}",
+                            "Invalid value passed to function {name}. Expected {value_type}, got {}",
                             passed_args[*index].get_type()
                         );
                     }
@@ -145,7 +158,7 @@ fn call_fn(name: &str, passed_args: Vec<Value>, scope: &mut Scope) -> Value {
                     if let Value::Return(val) = returned_val_from_expr {
                         if *return_type != val.get_type() {
                             panic!(
-                                "Invalid value returned from function {name}. Expected {return_type:?}, got {:?}",
+                                "Invalid value returned from function {name}. Expected {return_type}, got {}",
                                 val.get_type()
                             );
                         }
@@ -182,12 +195,12 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
         } => {
             if let Some(expected_type) = expected_type {
                 let rhs_value = interpret_expr(rhs, scope);
-                if rhs_value.get_type() == get_valuetype_from(&expected_type) {
+                if rhs_value.get_type() == get_valuetype_from(expected_type) {
                     scope.insert(lhs.to_string(), Box::new(rhs_value));
                     Value::Nothing
                 } else {
                     panic!(
-                        "Invalid value type for set operation. Expected {expected_type:?}, got {:?}",
+                        "Invalid value type for set operation. Expected {expected_type}, got {}",
                         rhs_value.get_type()
                     );
                 }

@@ -1,3 +1,5 @@
+use parser::ParseError;
+
 mod builtins;
 mod interpreter;
 mod lexer;
@@ -27,10 +29,15 @@ fn read_file() -> String {
     contents
 }
 
-fn main() {
+fn main() -> Result<(), ParseError> {
     use parser::Parser;
-    let tokens = Token::lexer(&read_file()).collect();
+    let tokens = Token::lexer(&read_file()).peekable();
     let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
+    if ast.is_err() {
+        println!("{:?}", ast.unwrap_err());
+        std::process::exit(1);
+    }
+    let mut interpreter = Interpreter::new(ast.unwrap());
     interpreter.run();
+    Ok(())
 }

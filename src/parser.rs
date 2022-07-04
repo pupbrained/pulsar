@@ -1,11 +1,19 @@
+use logos::Span;
+
 use {
     crate::lexer::Token,
     std::{collections::HashMap, fmt::Display, iter::Peekable, slice::Iter},
 };
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Parser {
-    tokens: Vec<Token>,
+#[derive(Debug, Clone)]
+pub struct Parser<'a> {
+    tokens: Peekable<Iter<'a, Token>>,
+}
+
+#[derive(Debug)]
+pub struct ParseError {
+    pub message: String,
+    pub spans: Vec<Span>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -99,7 +107,7 @@ impl Display for Expr {
                 body,
                 return_type,
             } => {
-                write!(f, "func {name}({args:?}) {{{body:?}}} -> {return_type:?}")
+                write!(f, "func {name}({args:?}) {{{body:?}}} -> {return_type}")
             }
             Expr::If {
                 cond,
@@ -111,32 +119,32 @@ impl Display for Expr {
     }
 }
 
-impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Parser {
+impl Parser<'_> {
+    pub fn new(tokens: Peekable<Iter<Token>>) -> Parser {
         Parser { tokens }
     }
 
-    pub fn parse(&self) -> Vec<Expr> {
+    pub fn parse(&self) -> Result<Vec<Expr>, ParseError> {
         let mut exprs = Vec::new();
-        let mut tokens = &mut self.tokens.iter().peekable();
+        let mut tokens = &mut self.tokens;
         while {
             let this = &tokens.clone();
             this.len() != 0
         } {
-            let (expr, tokens_new) = Self::parse_expr(tokens, true);
+            let (expr, tokens_new) = Self::parse_expr(tokens, true)?;
             tokens = tokens_new;
             exprs.push(expr);
         }
-        exprs
+        Ok(exprs)
     }
 
     fn parse_expr<'a>(
         tokens: &'a mut Peekable<Iter<'a, Token>>,
         mut sc_check: bool,
-    ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
+    ) -> Result<(Expr, &'a mut Peekable<Iter<'a, Token>>), ParseError> {
         let (expr, tokens_new) = match tokens.next() {
             Some(Token::Return) => {
-                let (expr, tokens_new) = Self::parse_expr(tokens, false);
+                let (expr, tokens_new) = Self::parse_expr(tokens, false)?;
                 (
                     Expr::Return {
                         inner: Box::new(expr),
@@ -147,7 +155,7 @@ impl Parser {
             Some(Token::Identifier(ident)) => match tokens.peek() {
                 Some(Token::SetVal) => {
                     tokens.next();
-                    let (expr, tokens_new) = Self::parse_expr(tokens, false);
+                    let (expr, tokens_new) = Self::parse_expr(tokens, false)?;
                     (
                         Expr::BinaryExpr {
                             op: Operator::SetVal(None),
@@ -159,11 +167,11 @@ impl Parser {
                 }
                 Some(Token::LParen) => {
                     tokens.next();
-                    Self::parse_fn_call(ident.to_string(), tokens)
+                    Self::parse_fn_call(ident.to_string(), tokens)?
                 }
                 Some(Token::Operator(op)) => {
                     tokens.next();
-                    let (expr, tokens_new) = Self::parse_expr(tokens, false);
+                    let (expr, tokens_new) = Self::parse_expr(tokens, false)?;
                     (
                         Expr::BinaryExpr {
                             op: Operator::from_str(op),
@@ -178,7 +186,7 @@ impl Parser {
             Some(Token::Int(i)) => match tokens.peek() {
                 Some(Token::Operator(op)) => {
                     tokens.next();
-                    let (expr, tokens_new) = Self::parse_expr(tokens, false);
+                    let (expr, tokens_new) = Self::parse_expr(tokens, false)?;
                     (
                         Expr::BinaryExpr {
                             op: Operator::from_str(op),
@@ -193,7 +201,7 @@ impl Parser {
             Some(Token::Float(f)) => match tokens.peek() {
                 Some(Token::Operator(op)) => {
                     tokens.next();
-                    let (expr, tokens_new) = Self::parse_expr(tokens, false);
+                    let (expr, tokens_new) = Self::parse_expr(tokens, false)?;
                     (
                         Expr::BinaryExpr {
                             op: Operator::from_str(op),
@@ -209,7 +217,7 @@ impl Parser {
             Some(Token::String(string)) => match tokens.peek() {
                 Some(Token::Operator(op)) => {
                     tokens.next();
-                    let (expr, tokens_new) = Self::parse_expr(tokens, false);
+                    let (expr, tokens_new) = Self::parse_expr(tokens, false)?;
                     (
                         Expr::BinaryExpr {
                             op: Operator::from_str(op),
@@ -223,16 +231,16 @@ impl Parser {
             },
             Some(Token::Func) => {
                 sc_check = false;
-                Self::parse_fn_def(tokens)
+                Self::parse_fn_def(tokens)?
             }
             Some(Token::If) => {
                 sc_check = false;
-                Self::parse_if(tokens)
+                Self::parse_if(tokens)?
             }
             Some(Token::Type(t)) => match tokens.next() {
                 Some(Token::Identifier(i)) => match tokens.next() {
                     Some(Token::SetVal) => {
-                        let (expr, tokens_new) = Self::parse_expr(tokens, false);
+                        let (expr, tokens_new) = Self::parse_expr(tokens, false)?;
                         (
                             Expr::BinaryExpr {
                                 op: Operator::SetVal(Some(t.clone())),
@@ -242,27 +250,40 @@ impl Parser {
                             tokens_new,
                         )
                     }
-                    _ => panic!("Expected setval"),
+                    _ => {
+                        return Err(ParseError {
+                            message: "Expected '=' after type".to_string(),
+                            spans: vec![],
+                        })
+                    }
                 },
-                _ => panic!("Expected identifier"),
+                _ => {
+                    return Err(ParseError {
+                        message: "Expected identifier after type".to_string(),
+                        spans: vec![],
+                    })
+                }
             },
             _ => (Expr::Token(Token::Error), tokens),
         };
         if sc_check {
             if tokens_new.peek() == Some(&&Token::Semicolon) {
                 tokens_new.next();
-                (expr, tokens_new)
+                Ok((expr, tokens_new))
             } else {
-                panic!("Expected semicolon, got {:?}", tokens_new.next());
+                Err(ParseError {
+                    message: "Expected semicolon".to_string(),
+                    spans: vec![],
+                })
             }
         } else {
-            (expr, tokens_new)
+            Ok((expr, tokens_new))
         }
     }
 
     fn parse_fn_def<'a>(
         tokens: &'a mut Peekable<Iter<'a, Token>>,
-    ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
+    ) -> Result<(Expr, &'a mut Peekable<Iter<'a, Token>>), ParseError> {
         match tokens.next() {
             Some(Token::Identifier(ident)) => match tokens.next() {
                 Some(Token::LParen) => {
@@ -284,7 +305,12 @@ impl Parser {
                                                 Expr::Token(Token::Type(t.clone())),
                                             );
                                         }
-                                        _ => panic!("Expected identifier"),
+                                        _ => {
+                                            return Err(ParseError {
+                                                message: "Expected identifier".to_string(),
+                                                spans: vec![],
+                                            })
+                                        }
                                     }
                                 }
                                 _ => panic!("Expected type"),
@@ -294,7 +320,12 @@ impl Parser {
                                 Some(Token::RParen) => {
                                     break;
                                 }
-                                _ => panic!("Expected comma, or ')'"),
+                                _ => {
+                                    return Err(ParseError {
+                                        message: "Expected ',' or ')'".to_string(),
+                                        spans: vec![],
+                                    })
+                                }
                             };
                             idx += 1;
                         }
@@ -304,17 +335,32 @@ impl Parser {
                             tokens.next();
                             return_type = match tokens.next() {
                                 Some(Token::Type(t)) => t.clone(),
-                                _ => panic!("Expected type"),
+                                _ => {
+                                    return Err(ParseError {
+                                        message: "Expected type".to_string(),
+                                        spans: vec![],
+                                    })
+                                }
                             };
                             match tokens.peek() {
                                 Some(Token::LBrace) => Self::handle_block(tokens),
-                                _ => panic!("Expected brace"),
+                                _ => {
+                                    return Err(ParseError {
+                                        message: "Expected '{'".to_string(),
+                                        spans: vec![],
+                                    })
+                                }
                             }
                         }
                         Some(Token::LBrace) => Self::handle_block(tokens),
-                        _ => panic!("Expected a return statement or brace"),
-                    };
-                    (
+                        _ => {
+                            return Err(ParseError {
+                                message: "Expected '{' or 'return'".to_string(),
+                                spans: vec![],
+                            })
+                        }
+                    }?;
+                    Ok((
                         Expr::FnDef {
                             name: ident.into(),
                             args: vals,
@@ -322,50 +368,66 @@ impl Parser {
                             return_type,
                         },
                         tokens_new,
-                    )
+                    ))
                 }
-                _ => panic!("Expected '(', got {:?}", tokens.peek()),
+                _ => Err(ParseError {
+                    message: "Expected '('".to_string(),
+                    spans: vec![],
+                }),
             },
-            _ => panic!("Expected identifier"),
+            _ => Err(ParseError {
+                message: "Expected identifier".to_string(),
+                spans: vec![],
+            }),
         }
     }
 
     fn handle_block<'a>(
         mut tokens: &'a mut Peekable<Iter<'a, Token>>,
-    ) -> (Vec<Expr>, &'a mut Peekable<Iter<'a, Token>>) {
+    ) -> Result<(Vec<Expr>, &'a mut Peekable<Iter<'a, Token>>), ParseError> {
         let mut exprs = Vec::new();
         if tokens.peek() == Some(&&Token::LBrace) {
             tokens.next();
             loop {
-                let (expr, tokens_new) = Self::parse_expr(tokens, true);
+                let (expr, tokens_new) = Self::parse_expr(tokens, true)?;
                 exprs.push(expr);
                 if let Some(Token::RBrace) = tokens_new.peek() {
                     tokens_new.next();
-                    return (exprs, tokens_new);
+                    return Ok((exprs, tokens_new));
                 };
                 tokens = tokens_new;
             }
         } else {
-            panic!("Expected '{{', got {:?}", tokens.peek());
-        };
+            Err(ParseError {
+                message: "Expected '{'".to_string(),
+                spans: vec![],
+            })
+        }
     }
 
     fn parse_fn_call<'a>(
         ident: String,
         mut tokens: &'a mut Peekable<Iter<'a, Token>>,
-    ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
+    ) -> Result<(Expr, &'a mut Peekable<Iter<'a, Token>>), ParseError> {
         let mut args = Vec::new();
         if tokens.peek() == Some(&&Token::RParen) {
             tokens.next();
-            (Expr::FnCall { name: ident, args }, tokens)
+            Ok((Expr::FnCall { name: ident, args }, tokens))
         } else {
             loop {
-                let (arg, tokens_new) = Self::parse_expr(tokens, false);
+                let (arg, tokens_new) = Self::parse_expr(tokens, false)?;
                 args.push(arg);
                 match tokens_new.next() {
                     Some(Token::Comma) => (),
-                    Some(Token::RParen) => return (Expr::FnCall { name: ident, args }, tokens_new),
-                    _ => panic!("Expect comma, or ')'"),
+                    Some(Token::RParen) => {
+                        return Ok((Expr::FnCall { name: ident, args }, tokens_new))
+                    }
+                    _ => {
+                        return Err(ParseError {
+                            message: "Expected ',' or ')'".to_string(),
+                            spans: vec![],
+                        })
+                    }
                 };
                 tokens = tokens_new;
             }
@@ -374,34 +436,39 @@ impl Parser {
 
     fn parse_if<'a>(
         tokens: &'a mut Peekable<Iter<'a, Token>>,
-    ) -> (Expr, &'a mut Peekable<Iter<'a, Token>>) {
-        let (cond, tokens_after_cond) = Self::parse_expr(tokens, false);
+    ) -> Result<(Expr, &'a mut Peekable<Iter<'a, Token>>), ParseError> {
+        let (cond, tokens_after_cond) = Self::parse_expr(tokens, false)?;
         let mut else_body: Option<Vec<Expr>> = None;
-        let (body, mut tokens) = Self::handle_block(tokens_after_cond);
+        let (body, mut tokens) = Self::handle_block(tokens_after_cond)?;
         if tokens.peek() == Some(&&Token::Else) {
             tokens.next();
             match tokens.peek() {
                 Some(Token::LBrace) => {
-                    let (exprs, tokens_new) = Self::handle_block(tokens);
+                    let (exprs, tokens_new) = Self::handle_block(tokens)?;
                     else_body = Some(exprs);
                     tokens = tokens_new;
                 }
                 Some(Token::If) => {
                     tokens.next();
-                    let (expr, tokens_new) = Self::parse_if(tokens);
+                    let (expr, tokens_new) = Self::parse_if(tokens)?;
                     else_body = Some(vec![expr]);
                     tokens = tokens_new;
                 }
-                _ => panic!("Expect {{, or if"),
+                _ => {
+                    return Err(ParseError {
+                        message: "Expected '{' or 'if'".to_string(),
+                        spans: vec![],
+                    })
+                }
             };
         };
-        (
+        Ok((
             Expr::If {
                 cond: Box::new(cond),
                 body,
                 else_body,
             },
             tokens,
-        )
+        ))
     }
 }
