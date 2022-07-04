@@ -22,7 +22,8 @@ pub struct State {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
-    Int(i64),
+    Int(i128),
+    Float(f64),
     String(String),
     Bool(bool),
     Fn(FnType),
@@ -33,6 +34,7 @@ pub enum Value {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValueType {
     Int,    /* (i64) */
+    Float,  /* (f64) */
     String, /* (String) */
     Bool,   /* (bool) */
     Fn,     /* (FnType) */
@@ -84,6 +86,7 @@ impl Display for Value {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
             Value::Int(i) => write!(f, "{i}"),
+            Value::Float(_) => Ok(()),
             Value::String(s) => write!(f, "{s}"),
             Value::Bool(b) => write!(f, "{b}"),
             Value::Fn(_) => Ok(()),
@@ -97,6 +100,7 @@ impl Value {
     fn get_type(&self) -> ValueType {
         match self {
             Value::Int(_) => ValueType::Int,
+            Value::Float(_) => ValueType::Float,
             Value::String(_) => ValueType::String,
             Value::Bool(_) => ValueType::Bool,
             Value::Fn(_f) => ValueType::Fn,
@@ -162,6 +166,7 @@ fn get_valuetype_from(name: &str) -> ValueType {
     match name {
         "bool" => ValueType::Bool,
         "int" => ValueType::Int,
+        "float" => ValueType::Float,
         "string" => ValueType::String,
         "_none" => ValueType::Nothing,
         _ => panic!("Invalid type name: {name}"),
@@ -189,20 +194,29 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
             match left_side {
                 Value::Int(left) => match right_side {
                     Value::Int(right) => Value::Int(left + right),
+                    Value::Float(right) => Value::Float(left as f64 + right),
+                    Value::String(right) => Value::String(left.to_string() + &right),
+                    _ => panic!("Invalid type for addition"),
+                },
+                Value::Float(left) => match right_side {
+                    Value::Float(right) => Value::Float(left + right),
+                    Value::Int(right) => Value::Float(left + right as f64),
                     Value::String(right) => Value::String(left.to_string() + &right),
                     _ => panic!("Invalid type for addition"),
                 },
                 Value::String(left) => match right_side {
                     Value::Int(right) => Value::String(left + &right.to_string()),
+                    Value::Float(right) => Value::String(left + &right.to_string()),
                     Value::String(right) => Value::String(left + &right),
                     Value::Bool(right) => Value::String(left + &right.to_string()),
-                    _ => panic!("Invalid type for addition",),
+                    _ => panic!("Invalid type for addition"),
                 },
                 Value::Bool(left) => match right_side {
                     Value::Int(right) => Value::String(left.to_string() + &right.to_string()),
+                    Value::Float(right) => Value::String(left.to_string() + &right.to_string()),
                     Value::String(right) => Value::String(left.to_string() + &right),
                     Value::Bool(right) => Value::String(left.to_string() + &right.to_string()),
-                    _ => panic!("Invalid type for addition",),
+                    _ => panic!("Invalid type for addition"),
                 },
                 _ => panic!("Invalid type for addition"),
             }
@@ -216,6 +230,7 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
             let right_side = interpret_expr(rhs, scope);
             match (left_side, right_side) {
                 (Value::Int(left), Value::Int(right)) => Value::Int(left - right),
+                (Value::Float(left), Value::Float(right)) => Value::Float(left - right),
                 _ => panic!("Cannot subtract non-numeric values"),
             }
         }
@@ -228,6 +243,10 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
             let right_side = interpret_expr(rhs, scope);
             match (left_side, right_side) {
                 (Value::Int(left), Value::Int(right)) => Value::Int(left * right),
+                (Value::Float(left), Value::Float(right)) => Value::Float(left * right),
+                (Value::String(left), Value::Int(right)) => {
+                    Value::String(left.repeat(right.try_into().unwrap()))
+                }
                 _ => panic!("Cannot multiply non-numeric values"),
             }
         }
@@ -240,6 +259,7 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
             let right_side = interpret_expr(rhs, scope);
             match (left_side, right_side) {
                 (Value::Int(left), Value::Int(right)) => Value::Int(left / right),
+                (Value::Float(left), Value::Float(right)) => Value::Float(left / right),
                 _ => panic!("Cannot divide non-numeric values"),
             }
         }
@@ -252,6 +272,7 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
             let right_side = interpret_expr(rhs, scope);
             match (left_side, right_side) {
                 (Value::Int(left), Value::Int(right)) => Value::Bool(left == right),
+                (Value::Float(left), Value::Float(right)) => Value::Bool(left == right),
                 (Value::String(left), Value::String(right)) => Value::Bool(left == right),
                 (Value::Bool(left), Value::Bool(right)) => Value::Bool(left == right),
                 _ => panic!("Cannot compare non-numeric values"),
@@ -266,13 +287,67 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
             let right_side = interpret_expr(rhs, scope);
             match (left_side, right_side) {
                 (Value::Int(left), Value::Int(right)) => Value::Bool(left != right),
+                (Value::Float(left), Value::Float(right)) => Value::Bool(left != right),
                 (Value::String(left), Value::String(right)) => Value::Bool(left != right),
                 (Value::Bool(left), Value::Bool(right)) => Value::Bool(left != right),
                 _ => panic!("Cannot compare non-numeric values"),
             }
         }
+        Expr::BinaryExpr {
+            op: Operator::Lt,
+            lhs,
+            rhs,
+        } => {
+            let left_side = interpret_expr(lhs, scope);
+            let right_side = interpret_expr(rhs, scope);
+            match (left_side, right_side) {
+                (Value::Int(left), Value::Int(right)) => Value::Bool(left < right),
+                (Value::Float(left), Value::Float(right)) => Value::Bool(left < right),
+                _ => panic!("Cannot compare non-numeric values"),
+            }
+        }
+        Expr::BinaryExpr {
+            op: Operator::Gt,
+            lhs,
+            rhs,
+        } => {
+            let left_side = interpret_expr(lhs, scope);
+            let right_side = interpret_expr(rhs, scope);
+            match (left_side, right_side) {
+                (Value::Int(left), Value::Int(right)) => Value::Bool(left > right),
+                (Value::Float(left), Value::Float(right)) => Value::Bool(left > right),
+                _ => panic!("Cannot compare non-numeric values"),
+            }
+        }
+        Expr::BinaryExpr {
+            op: Operator::Le,
+            lhs,
+            rhs,
+        } => {
+            let left_side = interpret_expr(lhs, scope);
+            let right_side = interpret_expr(rhs, scope);
+            match (left_side, right_side) {
+                (Value::Int(left), Value::Int(right)) => Value::Bool(left <= right),
+                (Value::Float(left), Value::Float(right)) => Value::Bool(left <= right),
+                _ => panic!("Cannot compare non-numeric values"),
+            }
+        }
+        Expr::BinaryExpr {
+            op: Operator::Ge,
+            lhs,
+            rhs,
+        } => {
+            let left_side = interpret_expr(lhs, scope);
+            let right_side = interpret_expr(rhs, scope);
+            match (left_side, right_side) {
+                (Value::Int(left), Value::Int(right)) => Value::Bool(left >= right),
+                (Value::Float(left), Value::Float(right)) => Value::Bool(left >= right),
+                _ => panic!("Cannot compare non-numeric values"),
+            }
+        }
         Expr::Token(x) => match x {
             Token::Int(x) => Value::Int(*x),
+            Token::Float(x) => Value::Float(*x),
             Token::String(x) => Value::String(x.to_string()),
             Token::Bool(x) => Value::Bool(*x),
             Token::Identifier(x) => {

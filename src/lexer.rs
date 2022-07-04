@@ -1,6 +1,6 @@
 use {logos::Logos, std::fmt::Display, substring::Substring};
 
-#[derive(Logos, Debug, PartialEq, Eq, Clone)]
+#[derive(Logos, Debug, PartialEq, Clone)]
 pub enum Token {
     #[token(":=")]
     SetVal,
@@ -12,7 +12,10 @@ pub enum Token {
     Identifier(String),
 
     #[regex("[0-9]+", |lex| lex.slice().parse())]
-    Int(i64),
+    Int(i128),
+
+    #[regex(r"[0-9]+(\.[0-9]+)", |lex| lex.slice().parse())]
+    Float(f64),
 
     #[regex("true|false", |lex| lex.slice().parse())]
     Bool(bool),
@@ -59,7 +62,7 @@ pub enum Token {
     #[regex("bool|int|string", |lex| lex.slice().parse())]
     Type(String),
 
-    #[regex(r"!=|==|[=+\-*/]", |lex| lex.slice().parse())]
+    #[regex(r"<|>|<=|>=|!=|==|[=+\-*/]", |lex| lex.slice().parse())]
     Operator(String),
 
     #[error]
@@ -74,6 +77,7 @@ impl Display for Token {
             Token::String(s) => write!(f, "{s}"),
             Token::Identifier(s) => write!(f, "{s}"),
             Token::Int(i) => write!(f, "{i}"),
+            Token::Float(_) => Ok(()),
             Token::Bool(b) => write!(f, "{b}"),
             Token::If => write!(f, "if"),
             Token::Else => write!(f, "else"),

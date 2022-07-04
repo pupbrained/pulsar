@@ -3,7 +3,7 @@ use {
     std::{collections::HashMap, fmt::Display, iter::Peekable, slice::Iter},
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Parser {
     tokens: Vec<Token>,
 }
@@ -16,6 +16,10 @@ pub enum Operator {
     Div,
     Eq,
     Neq,
+    Lt,
+    Gt,
+    Le,
+    Ge,
     SetVal,
 }
 
@@ -28,6 +32,10 @@ impl Operator {
             "/" => Self::Div,
             "==" => Self::Eq,
             "!=" => Self::Neq,
+            "<" => Self::Lt,
+            ">" => Self::Gt,
+            "<=" => Self::Le,
+            ">=" => Self::Ge,
             ":=" => Self::SetVal,
             _ => panic!("Unknown operator"),
         }
@@ -43,6 +51,10 @@ impl Display for Operator {
             Operator::Div => write!(f, "/"),
             Operator::Eq => write!(f, "=="),
             Operator::Neq => write!(f, "!="),
+            Operator::Lt => write!(f, "<"),
+            Operator::Gt => write!(f, ">"),
+            Operator::Le => write!(f, "<="),
+            Operator::Ge => write!(f, ">="),
             Operator::SetVal => write!(f, ":="),
         }
     }
@@ -178,6 +190,21 @@ impl Parser {
                     )
                 }
                 _ => (Expr::Token(Token::Int(*i)), tokens),
+            },
+            Some(Token::Float(f)) => match tokens.peek() {
+                Some(Token::Operator(op)) => {
+                    tokens.next();
+                    let (expr, tokens_new) = Self::parse_expr(tokens, false);
+                    (
+                        Expr::BinaryExpr {
+                            op: Operator::from_str(op),
+                            lhs: Box::new(Expr::Token(Token::Float(*f))),
+                            rhs: Box::new(expr),
+                        },
+                        tokens_new,
+                    )
+                }
+                _ => (Expr::Token(Token::Float(*f)), tokens),
             },
             Some(Token::Bool(bool)) => (Expr::Token(Token::Bool(*bool)), tokens),
             Some(Token::String(string)) => match tokens.peek() {

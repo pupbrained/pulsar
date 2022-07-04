@@ -1,12 +1,11 @@
-func do_thing(bool unused) -> int {
+func do_this() -> int {
   x := 1;
   y := 3;
 
   println("This is x when in the function: " + x);
   println("This is y when in the function: " + y);
-  println("This is unused when in the function: " + unused);
 
-  if unused == true {
+  if x < y {
     println("This is true when in the function");
     return x + y;
   } else {
@@ -14,5 +13,6 @@ func do_thing(bool unused) -> int {
   }
 }
 
-println(do_thing(true));
-println(do_thing(false));
+println("The function do_this() returns: " + do_this());
+println("Hello" * 5);
+println("This is a float: " + 3.14);
