@@ -31,7 +31,6 @@ fn main() {
     use parser::Parser;
     let tokens = Token::lexer(&read_file()).collect();
     let ast = Parser::new(tokens).parse();
-    println!("{:#?}", ast);
-    // let mut interpreter = Interpreter::new(ast);
-    // interpreter.run();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.run();
 }

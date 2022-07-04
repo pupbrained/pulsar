@@ -180,9 +180,24 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
             lhs,
             rhs,
         } => {
-            let right_side = interpret_expr(rhs, scope);
-            scope.insert(lhs.to_string(), Box::new(right_side));
-            Value::Nothing
+            if expected_type.is_some() {
+                let lhs_value = interpret_expr(lhs, scope);
+                let rhs_value = interpret_expr(rhs, scope);
+                if rhs_value.get_type() == *expected_type {
+                    scope.insert(lhs.to_string(), Box::new(rhs_value));
+                    Value::Nothing
+                } else {
+                    panic!(
+                        "Invalid value type for set operation. Expected {expected_type:?}, got {:?}",
+                        lhs_value.get_type()
+                    );
+                }
+            } else {
+                let lhs_value = interpret_expr(lhs, scope);
+                let rhs_value = interpret_expr(rhs, scope);
+                scope.insert(lhs.to_string(), Box::new(rhs_value));
+                Value::Nothing
+            }
         }
         Expr::BinaryExpr {
             op: Operator::Add,
