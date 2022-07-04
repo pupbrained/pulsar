@@ -230,6 +230,23 @@ impl Parser {
                 sc_check = false;
                 Self::parse_if(tokens)
             }
+            Some(Token::Type(t)) => match tokens.next() {
+                Some(Token::Identifier(i)) => match tokens.next() {
+                    Some(Token::SetVal) => {
+                        let (expr, tokens_new) = Self::parse_expr(tokens, false);
+                        (
+                            Expr::BinaryExpr {
+                                op: Operator::SetVal,
+                                lhs: Box::new(Expr::Token(Token::Identifier(i.into()))),
+                                rhs: Box::new(expr),
+                            },
+                            tokens_new,
+                        )
+                    }
+                    _ => panic!("Expected setval"),
+                },
+                _ => panic!("Expected identifier"),
+            },
             _ => (Expr::Token(Token::Error), tokens),
         };
         if sc_check {

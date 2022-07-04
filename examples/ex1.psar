@@ -1,5 +1,5 @@
 func do_this() -> int {
-  x := 1;
+  x := 5;
   y := 3;
 
   println("This is x when in the function: " + x);
@@ -8,11 +8,16 @@ func do_this() -> int {
   if x < y {
     println("This is true when in the function");
     return x + y;
-  } else {
+  } else if x == y {
     return x + 2;
+  } else {
+    return y - x;
   }
 }
 
 println("The function do_this() returns: " + do_this());
 println("Hello" * 5);
 println("This is a float: " + 3.14);
+
+int x := "hi";
+println(x);

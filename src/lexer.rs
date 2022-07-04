@@ -59,7 +59,7 @@ pub enum Token {
     #[token("return")]
     Return,
 
-    #[regex("bool|int|string", |lex| lex.slice().parse())]
+    #[regex("bool|int|string|float", |lex| lex.slice().parse())]
     Type(String),
 
     #[regex(r"<|>|<=|>=|!=|==|[=+\-*/]", |lex| lex.slice().parse())]
