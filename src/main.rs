@@ -31,9 +31,8 @@ fn read_file() -> String {
 
 fn main() -> Result<(), ParseError> {
     use parser::Parser;
-    let file_contents = read_file();
-    let mut tokens = Token::lexer(&file_contents).peekable();
-    let ast = Parser::new(&mut tokens).parse();
+    let tokens = Token::lexer(&read_file()).peekable();
+    let ast = Parser::new(tokens).parse();
     if ast.is_err() {
         println!("{:?}", ast.unwrap_err());
         std::process::exit(1);
