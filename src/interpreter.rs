@@ -182,7 +182,7 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
         } => {
             if let Some(expected_type) = expected_type {
                 let rhs_value = interpret_expr(rhs, scope);
-                if rhs_value.get_type() == get_valuetype_from(&expected_type) {
+                if rhs_value.get_type() == get_valuetype_from(expected_type) {
                     scope.insert(lhs.to_string(), Box::new(rhs_value));
                     Value::Nothing
                 } else {
