@@ -19,5 +19,5 @@ println("The function do_this() returns: " + do_this());
 println("Hello" * 5);
 println("This is a float: " + 3.14);
 
-int x := "hi";
+int x := -5;
 println(x);

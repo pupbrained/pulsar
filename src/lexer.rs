@@ -11,10 +11,10 @@ pub enum Token {
     #[regex("[a-zA-AZ_]+", |lex| lex.slice().parse())]
     Identifier(String),
 
-    #[regex("[0-9]+", |lex| lex.slice().parse())]
+    #[regex("-?[0-9]+", |lex| lex.slice().parse())]
     Int(i128),
 
-    #[regex(r"[0-9]+(\.[0-9]+)", |lex| lex.slice().parse())]
+    #[regex(r"-?[0-9]+(\.[0-9]+)", |lex| lex.slice().parse())]
     Float(f64),
 
     #[regex("true|false", |lex| lex.slice().parse())]
