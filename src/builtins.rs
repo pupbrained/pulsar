@@ -5,30 +5,30 @@ use {
 
 pub fn make_builtins(scope: &mut HashMap<String, Box<Value>>) {
     scope.insert(
-        "print".to_string(),
+        "print".into(),
         Box::new(Value::Fn(FnType::Builtin(BuiltinFn {
-            name: "print".to_string(),
+            name: "print".into(),
             return_type: ValueType::Nothing,
         }))),
     );
     scope.insert(
-        "println".to_string(),
+        "println".into(),
         Box::new(Value::Fn(FnType::Builtin(BuiltinFn {
             name: "println".to_string(),
             return_type: ValueType::Nothing,
         }))),
     );
     scope.insert(
-        "max".to_string(),
+        "max".into(),
         Box::new(Value::Fn(FnType::Builtin(BuiltinFn {
-            name: "max".to_string(),
+            name: "max".into(),
             return_type: ValueType::Int,
         }))),
     );
     scope.insert(
-        "min".to_string(),
+        "min".into(),
         Box::new(Value::Fn(FnType::Builtin(BuiltinFn {
-            name: "min".to_string(),
+            name: "min".into(),
             return_type: ValueType::Int,
         }))),
     );
