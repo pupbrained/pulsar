@@ -253,7 +253,7 @@ impl Parser {
                             die(format!(
                                 "Expected {}, got {}",
                                 "':='".green(),
-                                format!("'{}'", tokens.peek().unwrap()).green()
+                                format!("'{:?}'", tokens.peek().unwrap()).green()
                             ));
                         } else {
                             die(format!(
@@ -269,7 +269,7 @@ impl Parser {
                     if tokens.peek().is_some() {
                         die(format!(
                             "Expected identifier, got {}",
-                            format!("'{}'", tokens.peek().unwrap()).green()
+                            format!("'{:?}'", tokens.peek().unwrap()).green()
                         ));
                     } else {
                         die(format!(
@@ -328,7 +328,7 @@ impl Parser {
                                             if tokens.peek().is_some() {
                                                 die(format!(
                                                     "Expected identifier, got {}",
-                                                    format!("'{}'", tokens.peek().unwrap()).red()
+                                                    format!("'{:?}'", tokens.peek().unwrap()).red()
                                                 ));
                                             } else {
                                                 die(format!(
@@ -344,7 +344,7 @@ impl Parser {
                                         die(format!(
                                             "Expected {}, got {}",
                                             "type".green(),
-                                            format!("'{}'", tokens.peek().unwrap()).red()
+                                            format!("'{:?}'", tokens.peek().unwrap()).red()
                                         ));
                                     } else {
                                         die(format!(
@@ -477,10 +477,10 @@ impl Parser {
                 }
                 _ => {
                     die(format!(
-                        "Expected '{}' or {}, got '{}'",
+                        "Expected '{}' or {}, got '{:?}'",
                         "{}".green(),
                         "if".green(),
-                        tokens.peek().unwrap().to_string().green()
+                        tokens.peek().unwrap()
                     ));
                     unreachable!()
                 }
