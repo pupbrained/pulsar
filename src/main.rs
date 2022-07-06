@@ -1,3 +1,7 @@
+use std::process::exit;
+
+use colored::Colorize;
+
 mod builtins;
 mod interpreter;
 mod lexer;
@@ -16,6 +20,11 @@ use {
 struct Args {
     #[clap(short, long, value_parser)]
     file: String,
+}
+
+pub fn die(err: String) {
+    eprintln!("{} {}", "ERROR:".red(), err);
+    exit(1);
 }
 
 fn read_file() -> String {

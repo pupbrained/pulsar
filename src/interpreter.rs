@@ -1,3 +1,7 @@
+use colored::Colorize;
+
+use crate::die;
+
 use {
     crate::{
         builtins,
@@ -367,7 +371,8 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
                 if let Some(val) = scope.get(x) {
                     *val.clone()
                 } else {
-                    panic!("Undefined variable: {x}")
+                    die(format!("Undefined variable '{}'", x.green()));
+                    unreachable!()
                 }
             }
             _ => Value::Nothing,
@@ -386,7 +391,6 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
             return_type,
         } => {
             let funcdef = Value::Fn(FnType::User(UserFn {
-                // FIXME: Is there a better way to do this?
                 name: name.clone(),
                 args: args
                     .iter()

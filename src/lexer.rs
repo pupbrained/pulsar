@@ -65,6 +65,18 @@ pub enum Token {
     #[regex(r"<|>|<=|>=|!=|==|[=+\-*/]", |lex| lex.slice().parse())]
     Operator(String),
 
+    #[regex("while|for|loop", |lex| lex.slice().parse())]
+    Loop(String),
+
+    #[token("break")]
+    Break,
+
+    #[token("continue")]
+    Continue,
+
+    #[regex("and|or|not", |lex| lex.slice().parse())]
+    Logic(String),
+
     #[error]
     #[regex(r"[ \n\t\f]+", logos::skip)]
     Error,
@@ -94,6 +106,10 @@ impl Display for Token {
             Token::Return => write!(f, "return"),
             Token::Type(s) => write!(f, "{s}"),
             Token::Operator(s) => write!(f, "{s}"),
+            Token::Loop(s) => write!(f, "{s}"),
+            Token::Break => write!(f, "break"),
+            Token::Continue => write!(f, "continue"),
+            Token::Logic(s) => write!(f, "{s}"),
             Token::Error => write!(f, "Error"),
         }
     }

@@ -1,3 +1,7 @@
+use colored::Colorize;
+
+use crate::die;
+
 use {
     crate::lexer::Token,
     std::{collections::HashMap, fmt::Display, iter::Peekable, slice::Iter},
@@ -242,18 +246,51 @@ impl Parser {
                             tokens_new,
                         )
                     }
-                    _ => panic!("Expected setval"),
+                    _ => {
+                        if tokens.peek().is_some() {
+                            die(format!(
+                                "Expected {}, got {}",
+                                "':='".green(),
+                                format!("'{}'", tokens.peek().unwrap()).green()
+                            ));
+                        } else {
+                            die(format!(
+                                "Expected {}, got {}",
+                                "':='".green(),
+                                "EOF".green()
+                            ));
+                        }
+                        unreachable!()
+                    }
                 },
-                _ => panic!("Expected identifier"),
+                _ => {
+                    if tokens.peek().is_some() {
+                        die(format!(
+                            "Expected identifier, got {}",
+                            format!("'{}'", tokens.peek().unwrap()).green()
+                        ));
+                    } else {
+                        die(format!(
+                            "Expected {}, got {}",
+                            "identifier".green(),
+                            "EOF".red()
+                        ));
+                    }
+                    unreachable!()
+                }
             },
-            _ => (Expr::Token(Token::Error), tokens),
+            _ => {
+                die("Unexpected token".to_string());
+                unreachable!()
+            }
         };
         if sc_check {
             if tokens_new.peek() == Some(&&Token::Semicolon) {
                 tokens_new.next();
                 (expr, tokens_new)
             } else {
-                panic!("Expected semicolon, got {:?}", tokens_new.next());
+                die("Expected semicolon".to_string());
+                unreachable!()
             }
         } else {
             (expr, tokens_new)
@@ -284,17 +321,45 @@ impl Parser {
                                                 Expr::Token(Token::Type(t.clone())),
                                             );
                                         }
-                                        _ => panic!("Expected identifier"),
+                                        _ => {
+                                            if tokens.peek().is_some() {
+                                                die(format!(
+                                                    "Expected identifier, got {}",
+                                                    format!("'{}'", tokens.peek().unwrap()).red()
+                                                ));
+                                            } else {
+                                                die(format!(
+                                                    "Expected identifier, got {}",
+                                                    "EOF".red()
+                                                ));
+                                            }
+                                        }
                                     }
                                 }
-                                _ => panic!("Expected type"),
+                                _ => {
+                                    if tokens.peek().is_some() {
+                                        die(format!(
+                                            "Expected {}, got {}",
+                                            "type".green(),
+                                            format!("'{}'", tokens.peek().unwrap()).red()
+                                        ));
+                                    } else {
+                                        die(format!(
+                                            "Expected {}, got {}",
+                                            "type".green(),
+                                            "EOF".red()
+                                        ));
+                                    }
+                                }
                             }
                             match tokens.next() {
                                 Some(Token::Comma) => (),
                                 Some(Token::RParen) => {
                                     break;
                                 }
-                                _ => panic!("Expected comma, or ')'"),
+                                _ => {
+                                    die(format!("Expected , or ), got {:?}", tokens.peek()));
+                                }
                             };
                             idx += 1;
                         }
@@ -304,15 +369,27 @@ impl Parser {
                             tokens.next();
                             return_type = match tokens.next() {
                                 Some(Token::Type(t)) => t.clone(),
-                                _ => panic!("Expected type"),
+                                _ => {
+                                    die(format!("Expected type, got {:?}", tokens.peek()));
+                                    unreachable!()
+                                }
                             };
                             match tokens.peek() {
                                 Some(Token::LBrace) => Self::handle_block(tokens),
-                                _ => panic!("Expected brace"),
+                                _ => {
+                                    die(format!("Expected {{, got {:?}", tokens.peek()));
+                                    unreachable!()
+                                }
                             }
                         }
                         Some(Token::LBrace) => Self::handle_block(tokens),
-                        _ => panic!("Expected a return statement or brace"),
+                        _ => {
+                            die(format!(
+                                "Expected {{ or return type, got {:?}",
+                                tokens.peek()
+                            ));
+                            unreachable!()
+                        }
                     };
                     (
                         Expr::FnDef {
@@ -324,9 +401,15 @@ impl Parser {
                         tokens_new,
                     )
                 }
-                _ => panic!("Expected '(', got {:?}", tokens.peek()),
+                _ => {
+                    die(format!("Expected identifier, got {:?}", tokens.peek()));
+                    unreachable!()
+                }
             },
-            _ => panic!("Expected identifier"),
+            _ => {
+                die(format!("Expected identifier, got {:?}", tokens.peek()));
+                unreachable!()
+            }
         }
     }
 
@@ -346,7 +429,8 @@ impl Parser {
                 tokens = tokens_new;
             }
         } else {
-            panic!("Expected '{{', got {:?}", tokens.peek());
+            die(format!("Expected {{, got {:?}", tokens.peek()));
+            unreachable!()
         };
     }
 
@@ -365,7 +449,10 @@ impl Parser {
                 match tokens_new.next() {
                     Some(Token::Comma) => (),
                     Some(Token::RParen) => return (Expr::FnCall { name: ident, args }, tokens_new),
-                    _ => panic!("Expect comma, or ')'"),
+                    _ => {
+                        die(format!("Expected , or ), got {:?}", tokens_new.peek()));
+                        unreachable!()
+                    }
                 };
                 tokens = tokens_new;
             }
@@ -392,7 +479,15 @@ impl Parser {
                     else_body = Some(vec![expr]);
                     tokens = tokens_new;
                 }
-                _ => panic!("Expect {{, or if"),
+                _ => {
+                    die(format!(
+                        "Expected '{}' or {}, got '{}'",
+                        "{}".green(),
+                        "if".green(),
+                        tokens.peek().unwrap().to_string().green()
+                    ));
+                    unreachable!()
+                }
             };
         };
         (
