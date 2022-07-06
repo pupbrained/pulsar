@@ -38,7 +38,7 @@ fn read_file() -> String {
 
 fn main() {
     use parser::Parser;
-    let tokens = Token::lexer(&read_file()).collect();
+    let tokens: Vec<_> = Token::lexer(&read_file()).spanned().collect();
     let ast = Parser::new(tokens).parse();
     let mut interpreter = Interpreter::new(ast);
     interpreter.run();
