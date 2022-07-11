@@ -1,12 +1,8 @@
-use std::ops::Range;
-
-use colored::Colorize;
-
-use crate::die;
-
 use {
-    crate::lexer::Token,
-    std::{collections::HashMap, fmt::Display, iter::Peekable, slice::Iter},
+    crate::{die, lexer::Token},
+    ariadne::{ColorGenerator, Label, Report, ReportKind, Source},
+    colored::Colorize,
+    std::{collections::HashMap, fmt::Display, iter::Peekable, ops::Range, slice::Iter},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -140,8 +136,9 @@ impl Parser {
         tokens: &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>,
         mut sc_check: bool,
     ) -> (Expr, &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>) {
+        let mut colors = ColorGenerator::new();
         let (expr, tokens_new) = match tokens.next() {
-            Some((Token::Return, _span)) => {
+            Some((Token::Return, _)) => {
                 let (expr, tokens_new) = Self::parse_expr(tokens, false);
                 (
                     Expr::Return {
@@ -150,8 +147,8 @@ impl Parser {
                     tokens_new,
                 )
             }
-            Some((Token::Identifier(ident), _span)) => match tokens.peek() {
-                Some((Token::SetVal, _span)) => {
+            Some((Token::Identifier(ident), _)) => match tokens.peek() {
+                Some((Token::SetVal, _)) => {
                     tokens.next();
                     let (expr, tokens_new) = Self::parse_expr(tokens, false);
                     (
@@ -163,11 +160,11 @@ impl Parser {
                         tokens_new,
                     )
                 }
-                Some((Token::LParen, _span)) => {
+                Some((Token::LParen, _)) => {
                     tokens.next();
                     Self::parse_fn_call(ident.to_string(), tokens)
                 }
-                Some((Token::Operator(op), _span)) => {
+                Some((Token::Operator(op), _)) => {
                     tokens.next();
                     let (expr, tokens_new) = Self::parse_expr(tokens, false);
                     (
@@ -181,8 +178,8 @@ impl Parser {
                 }
                 _ => (Expr::Token(Token::Identifier(ident.into())), tokens),
             },
-            Some((Token::Int(i), _span)) => match tokens.peek() {
-                Some((Token::Operator(op), _span)) => {
+            Some((Token::Int(i), _)) => match tokens.peek() {
+                Some((Token::Operator(op), _)) => {
                     tokens.next();
                     let (expr, tokens_new) = Self::parse_expr(tokens, false);
                     (
@@ -196,8 +193,8 @@ impl Parser {
                 }
                 _ => (Expr::Token(Token::Int(*i)), tokens),
             },
-            Some((Token::Float(f), _span)) => match tokens.peek() {
-                Some((Token::Operator(op), _span)) => {
+            Some((Token::Float(f), _)) => match tokens.peek() {
+                Some((Token::Operator(op), _)) => {
                     tokens.next();
                     let (expr, tokens_new) = Self::parse_expr(tokens, false);
                     (
@@ -211,9 +208,9 @@ impl Parser {
                 }
                 _ => (Expr::Token(Token::Float(*f)), tokens),
             },
-            Some((Token::Bool(bool), _span)) => (Expr::Token(Token::Bool(*bool)), tokens),
-            Some((Token::String(string), _span)) => match tokens.peek() {
-                Some((Token::Operator(op), _span)) => {
+            Some((Token::Bool(bool), _)) => (Expr::Token(Token::Bool(*bool)), tokens),
+            Some((Token::String(string), _)) => match tokens.peek() {
+                Some((Token::Operator(op), _)) => {
                     tokens.next();
                     let (expr, tokens_new) = Self::parse_expr(tokens, false);
                     (
@@ -227,17 +224,17 @@ impl Parser {
                 }
                 _ => (Expr::Token(Token::String(string.into())), tokens),
             },
-            Some((Token::Func, _span)) => {
+            Some((Token::Func, _)) => {
                 sc_check = false;
                 Self::parse_fn_def(tokens)
             }
-            Some((Token::If, _span)) => {
+            Some((Token::If, _)) => {
                 sc_check = false;
                 Self::parse_if(tokens)
             }
-            Some((Token::Type(t), _span)) => match tokens.next() {
-                Some((Token::Identifier(i), _span)) => match tokens.next() {
-                    Some((Token::SetVal, _span)) => {
+            Some((Token::Type(t), _)) => match tokens.next() {
+                Some((Token::Identifier(i), _)) => match tokens.next() {
+                    Some((Token::SetVal, _)) => {
                         let (expr, tokens_new) = Self::parse_expr(tokens, false);
                         (
                             Expr::BinaryExpr {
@@ -250,40 +247,94 @@ impl Parser {
                     }
                     _ => {
                         if tokens.peek().is_some() {
-                            die(format!(
-                                "Expected {}, got {}",
-                                "':='".green(),
-                                format!("'{:?}'", tokens.peek().unwrap()).green()
-                            ));
+                            Report::build(
+                                ReportKind::Error,
+                                (),
+                                tokens.peek().unwrap().1.clone().nth(0).unwrap(),
+                            )
+                            .with_message("Expected ':='")
+                            .with_label(
+                                Label::new(tokens.peek().unwrap().1.clone())
+                                    .with_message(format!("Got {}", tokens.peek().unwrap().0))
+                                    .with_color(colors.next()),
+                            )
+                            .finish()
+                            .print(Source::from(include_str!("../examples/ex1.psar")))
+                            .unwrap();
                         } else {
-                            die(format!(
-                                "Expected {}, got {}",
-                                "':='".green(),
-                                "EOF".green()
-                            ));
+                            Report::build(
+                                ReportKind::Error,
+                                (),
+                                tokens.peek().unwrap().1.clone().nth(0).unwrap(), // FIXME: This will fail if the error is at the end of the file.
+                            )
+                            .with_message("Expected ':='")
+                            .with_label(
+                                Label::new(tokens.peek().unwrap().1.clone())
+                                    .with_message("Got EOF")
+                                    .with_color(colors.next()),
+                            )
+                            .finish()
+                            .print(Source::from(include_str!("../examples/ex1.psar")))
+                            .unwrap();
                         }
-                        unreachable!()
+                        std::process::exit(1);
                     }
                 },
                 _ => {
                     if tokens.peek().is_some() {
-                        die(format!(
-                            "Expected identifier, got {}",
-                            format!("'{:?}'", tokens.peek().unwrap()).green()
-                        ));
+                        Report::build(
+                            ReportKind::Error,
+                            (),
+                            tokens.peek().unwrap().1.clone().nth(0).unwrap(),
+                        )
+                        .with_message("Expected identifier")
+                        .with_label(
+                            Label::new(tokens.peek().unwrap().1.clone())
+                                .with_message(format!(
+                                    "Got {}",
+                                    tokens.peek().unwrap().0.to_string()
+                                ))
+                                .with_color(colors.next()),
+                        )
+                        .finish()
+                        .print(Source::from(include_str!("../examples/ex1.psar")))
+                        .unwrap();
+                        std::process::exit(1);
                     } else {
-                        die(format!(
-                            "Expected {}, got {}",
-                            "identifier".green(),
-                            "EOF".red()
-                        ));
+                        Report::build(
+                            ReportKind::Error,
+                            (),
+                            tokens.peek().unwrap().1.clone().nth(0).unwrap(),
+                        )
+                        .with_message("Expected identifier")
+                        .with_label(
+                            Label::new(tokens.peek().unwrap().1.clone())
+                                .with_message("Got EOF")
+                                .with_color(colors.next()),
+                        )
+                        .finish()
+                        .print(Source::from(include_str!("../examples/ex1.psar")))
+                        .unwrap();
+                        std::process::exit(1);
                     }
-                    unreachable!()
                 }
             },
             _ => {
-                die("Unexpected token".to_string());
-                unreachable!()
+                Report::build(
+                    ReportKind::Error,
+                    (),
+                    tokens.peek().unwrap().1.clone().nth(0).unwrap(),
+                )
+                .with_message("Expected identifier")
+                .with_label(
+                    Label::new(tokens.peek().unwrap().1.clone())
+                        .with_message(format!("Got {}", tokens.peek().unwrap().0.to_string()))
+                        .with_color(colors.next()),
+                )
+                .finish()
+                .print(Source::from(include_str!("../examples/ex1.psar")))
+                .unwrap();
+                std::process::exit(1);
             }
         };
         if sc_check {
@@ -304,20 +355,20 @@ impl Parser {
         tokens: &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>,
     ) -> (Expr, &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>) {
         match tokens.next() {
-            Some((Token::Identifier(ident), _span)) => match tokens.next() {
-                Some((Token::LParen, _span)) => {
+            Some((Token::Identifier(ident), _)) => match tokens.next() {
+                Some((Token::LParen, span)) => {
                     let mut vals = HashMap::new();
                     let mut return_type: String = String::from("_none");
-                    if tokens.peek() == Some(&&(Token::RParen, _span.to_owned())) {
+                    if tokens.peek() == Some(&&(Token::RParen, span.to_owned())) {
                         tokens.next();
                     } else {
                         let mut idx = 0;
                         loop {
                             match tokens.peek() {
-                                Some((Token::Type(t), _span)) => {
+                                Some((Token::Type(t), _)) => {
                                     tokens.next();
                                     match tokens.peek() {
-                                        Some((Token::Identifier(ident), __span)) => {
+                                        Some((Token::Identifier(ident), __)) => {
                                             tokens.next();
                                             vals.insert(
                                                 (idx, ident.to_string()),
@@ -326,8 +377,8 @@ impl Parser {
                                         }
                                         _ => {
                                             match tokens.next() {
-                                                Some((Token::Comma, _span)) => (),
-                                                Some((Token::RParen, _span)) => {
+                                                Some((Token::Comma, _)) => (),
+                                                Some((Token::RParen, _)) => {
                                                     break;
                                                 }
                                                 _ => {
@@ -342,8 +393,8 @@ impl Parser {
                                 }
                                 _ => {
                                     match tokens.next() {
-                                        Some((Token::Comma, _span)) => (),
-                                        Some((Token::RParen, _span)) => {
+                                        Some((Token::Comma, _)) => (),
+                                        Some((Token::RParen, _)) => {
                                             break;
                                         }
                                         _ => {
@@ -360,20 +411,20 @@ impl Parser {
                         }
                     }
                     let (body, tokens_new) = match tokens.peek() {
-                        Some((Token::ReturnType, _span)) => {
+                        Some((Token::ReturnType, _)) => {
                             tokens.next();
                             return_type = match tokens.next() {
-                                Some((Token::Type(t), _span)) => t.clone(),
-                                _ => panic!("Expected type, got {:?} at {_span:?}", tokens.peek()),
+                                Some((Token::Type(t), _)) => t.clone(),
+                                _ => panic!("Expected type, got {:?}", tokens.peek()),
                             };
                             match tokens.peek() {
-                                Some((Token::LBrace, _span)) => Self::handle_block(tokens),
-                                _ => panic!("Expected brace, got {:?} at {_span:?}", tokens.peek()),
+                                Some((Token::LBrace, _)) => Self::handle_block(tokens),
+                                _ => panic!("Expected brace, got {:?}", tokens.peek()),
                             }
                         }
-                        Some((Token::LBrace, _span)) => Self::handle_block(tokens),
+                        Some((Token::LBrace, _)) => Self::handle_block(tokens),
                         _ => panic!(
-                            "Expected a return statement or brace, got {:?} at {_span:?}",
+                            "Expected a return statement or brace, got {:?}",
                             tokens.peek()
                         ),
                     };
@@ -409,7 +460,7 @@ impl Parser {
             loop {
                 let (expr, tokens_new) = Self::parse_expr(tokens, true);
                 exprs.push(expr);
-                if let Some((Token::RBrace, _span)) = tokens_new.peek() {
+                if let Some((Token::RBrace, _)) = tokens_new.peek() {
                     tokens_new.next();
                     return (exprs, tokens_new);
                 };
@@ -456,25 +507,33 @@ impl Parser {
         if tokens.peek() == Some(&&(Token::Else, _span)) {
             tokens.next();
             match tokens.peek() {
-                Some((Token::LBrace, _span)) => {
+                Some((Token::LBrace, _)) => {
                     let (exprs, tokens_new) = Self::handle_block(tokens);
                     else_body = Some(exprs);
                     tokens = tokens_new;
                 }
-                Some((Token::If, _span)) => {
+                Some((Token::If, _)) => {
                     tokens.next();
                     let (expr, tokens_new) = Self::parse_if(tokens);
                     else_body = Some(vec![expr]);
                     tokens = tokens_new;
                 }
                 _ => {
-                    die(format!(
-                        "Expected '{}' or {}, got '{:?}'",
-                        "{}".green(),
-                        "if".green(),
-                        tokens.peek().unwrap()
-                    ));
-                    unreachable!()
+                    let mut colors = ColorGenerator::new();
+                    Report::build(
+                        ReportKind::Error,
+                        (), // FIXME: Actually get the filename, not sure how to yet
+                        tokens.peek().unwrap().1.clone().nth(0).unwrap(),
+                    )
+                    .with_message("Expected '{' or 'if'")
+                    .with_label(
+                        Label::new(tokens.peek().unwrap().1.clone())
+                            .with_message(format!("Got {}", tokens.peek().unwrap().0.to_string()))
+                            .with_color(colors.next()),
+                    )
+                    .finish()
+                    .print(Source::from(include_str!("../examples/ex1.psar")))
+                    .unwrap();
                 }
             };
         };

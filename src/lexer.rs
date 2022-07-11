@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use {logos::Logos, std::fmt::Display, substring::Substring};
 
 #[derive(Logos, Debug, PartialEq, Clone)]
