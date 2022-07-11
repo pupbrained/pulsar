@@ -141,7 +141,7 @@ impl Parser {
         mut sc_check: bool,
     ) -> Result<(Expr, &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>), Error> {
         let mut colors = ColorGenerator::new();
-        let Ok((expr, tokens_new)) = match tokens.next() {
+        let (expr, tokens_new) = if let Ok((expr, tokens_new)) = match tokens.next() {
             Some((Token::Return, _)) => {
                 let (expr, tokens_new) =
                     if let Ok((expr, tokens_new)) = Self::parse_expr(tokens, false) {
@@ -375,6 +375,10 @@ impl Parser {
                 .unwrap();
                 std::process::exit(1);
             }
+        } {
+            (expr, tokens_new)
+        } else {
+            todo!();
         };
         if sc_check {
             let _span: Range<usize> = tokens_new.peek().unwrap().1.clone();
@@ -449,7 +453,7 @@ impl Parser {
                             idx += 1;
                         }
                     }
-                    let Ok((body, tokens_new)) = match tokens.peek() {
+                    let (body, tokens_new) = if let Ok((body, tokens_new)) = match tokens.peek() {
                         Some((Token::ReturnType, _)) => {
                             tokens.next();
                             return_type = match tokens.next() {
@@ -466,6 +470,10 @@ impl Parser {
                             "Expected a return statement or brace, got {:?}",
                             tokens.peek()
                         ),
+                    } {
+                        (body, tokens_new)
+                    } else {
+                        todo!()
                     };
                     Ok((
                         Expr::FnDef {
@@ -549,21 +557,40 @@ impl Parser {
     fn parse_if<'a>(
         tokens: &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>,
     ) -> Result<(Expr, &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>), Error> {
-        let Ok((cond, tokens_after_cond)) = Self::parse_expr(tokens, false);
+        let (cond, tokens_after_cond) =
+            if let Ok((cond, tokens_after_cond)) = Self::parse_expr(tokens, false) {
+                (cond, tokens_after_cond)
+            } else {
+                todo!();
+            };
         let mut else_body: Option<Vec<Expr>> = None;
-        let Ok((body, mut tokens)) = Self::handle_block(tokens_after_cond);
+        let (body, mut tokens) = if let Ok((body, tokens)) = Self::handle_block(tokens_after_cond) {
+            (body, tokens)
+        } else {
+            todo!();
+        };
         let _span: Range<usize> = tokens.peek().unwrap().1.clone();
         if tokens.peek() == Some(&&(Token::Else, _span)) {
             tokens.next();
             match tokens.peek() {
                 Some((Token::LBrace, _)) => {
-                    let Ok((exprs, tokens_new)) = Self::handle_block(tokens);
+                    let (exprs, tokens_new) =
+                        if let Ok((exprs, tokens_new)) = Self::handle_block(tokens) {
+                            (exprs, tokens_new)
+                        } else {
+                            todo!();
+                        };
                     else_body = Some(exprs);
                     tokens = tokens_new;
                 }
                 Some((Token::If, _)) => {
                     tokens.next();
-                    let Ok((expr, tokens_new)) = Self::parse_if(tokens);
+                    let (expr, tokens_new) = if let Ok((expr, tokens_new)) = Self::parse_if(tokens)
+                    {
+                        (expr, tokens_new)
+                    } else {
+                        todo!();
+                    };
                     else_body = Some(vec![expr]);
                     tokens = tokens_new;
                 }

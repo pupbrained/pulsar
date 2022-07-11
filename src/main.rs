@@ -1,8 +1,3 @@
-use std::{ops::Range, process::exit};
-
-use ariadne::Span;
-use colored::Colorize;
-
 mod builtins;
 mod interpreter;
 mod lexer;
@@ -10,10 +5,11 @@ mod parser;
 
 use {
     clap::Parser,
+    colored::Colorize,
     interpreter::Interpreter,
     lexer::Token,
     logos::Logos,
-    std::{fs::File, io::Read},
+    std::{fs::File, io::Read, ops::Range, process::exit},
 };
 
 #[derive(Parser, Debug)]
