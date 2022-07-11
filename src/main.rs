@@ -1,5 +1,6 @@
-use std::process::exit;
+use std::{ops::Range, process::exit};
 
+use ariadne::Span;
 use colored::Colorize;
 
 mod builtins;
@@ -20,6 +21,11 @@ use {
 struct Args {
     #[clap(short, long, value_parser)]
     file: String,
+}
+
+pub struct Error {
+    pub message: String,
+    pub spans: Vec<(Range<usize>, String)>,
 }
 
 pub fn die(err: String) {

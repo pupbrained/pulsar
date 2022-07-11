@@ -1,5 +1,5 @@
 use {
-    crate::{die, lexer::Token},
+    crate::{die, lexer::Token, Error},
     ariadne::{ColorGenerator, Label, Report, ReportKind, Source},
     std::{collections::HashMap, fmt::Display, iter::Peekable, ops::Range, slice::Iter},
 };
@@ -124,7 +124,12 @@ impl Parser {
             let this = &tokens.clone();
             this.len() != 0
         } {
-            let (expr, tokens_new) = Self::parse_expr(tokens, true);
+            let (expr, tokens_new) = if let Ok((expr, tokens_new)) = Self::parse_expr(tokens, true)
+            {
+                (expr, tokens_new)
+            } else {
+                todo!();
+            };
             tokens = tokens_new;
             exprs.push(expr);
         }
@@ -134,30 +139,40 @@ impl Parser {
     fn parse_expr<'a>(
         tokens: &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>,
         mut sc_check: bool,
-    ) -> (Expr, &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>) {
+    ) -> Result<(Expr, &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>), Error> {
         let mut colors = ColorGenerator::new();
-        let (expr, tokens_new) = match tokens.next() {
+        let Ok((expr, tokens_new)) = match tokens.next() {
             Some((Token::Return, _)) => {
-                let (expr, tokens_new) = Self::parse_expr(tokens, false);
-                (
+                let (expr, tokens_new) =
+                    if let Ok((expr, tokens_new)) = Self::parse_expr(tokens, false) {
+                        (expr, tokens_new)
+                    } else {
+                        todo!();
+                    };
+                Ok((
                     Expr::Return {
                         inner: Box::new(expr),
                     },
                     tokens_new,
-                )
+                ))
             }
             Some((Token::Identifier(ident), _)) => match tokens.peek() {
                 Some((Token::SetVal, _)) => {
                     tokens.next();
-                    let (expr, tokens_new) = Self::parse_expr(tokens, false);
-                    (
+                    let (expr, tokens_new) =
+                        if let Ok((expr, tokens_new)) = Self::parse_expr(tokens, false) {
+                            (expr, tokens_new)
+                        } else {
+                            todo!();
+                        };
+                    Ok((
                         Expr::BinaryExpr {
                             op: Operator::SetVal(None),
                             lhs: Box::new(Expr::Token(Token::Identifier(ident.into()))),
                             rhs: Box::new(expr),
                         },
                         tokens_new,
-                    )
+                    ))
                 }
                 Some((Token::LParen, _)) => {
                     tokens.next();
@@ -165,63 +180,83 @@ impl Parser {
                 }
                 Some((Token::Operator(op), _)) => {
                     tokens.next();
-                    let (expr, tokens_new) = Self::parse_expr(tokens, false);
-                    (
+                    let (expr, tokens_new) =
+                        if let Ok((expr, tokens_new)) = Self::parse_expr(tokens, false) {
+                            (expr, tokens_new)
+                        } else {
+                            todo!();
+                        };
+                    Ok((
                         Expr::BinaryExpr {
                             op: Operator::from_str(op),
                             lhs: Box::new(Expr::Token(Token::Identifier(ident.into()))),
                             rhs: Box::new(expr),
                         },
                         tokens_new,
-                    )
+                    ))
                 }
-                _ => (Expr::Token(Token::Identifier(ident.into())), tokens),
+                _ => Ok((Expr::Token(Token::Identifier(ident.into())), tokens)),
             },
             Some((Token::Int(i), _)) => match tokens.peek() {
                 Some((Token::Operator(op), _)) => {
                     tokens.next();
-                    let (expr, tokens_new) = Self::parse_expr(tokens, false);
-                    (
+                    let (expr, tokens_new) =
+                        if let Ok((expr, tokens_new)) = Self::parse_expr(tokens, false) {
+                            (expr, tokens_new)
+                        } else {
+                            todo!();
+                        };
+                    Ok((
                         Expr::BinaryExpr {
                             op: Operator::from_str(op),
                             lhs: Box::new(Expr::Token(Token::Int(*i))),
                             rhs: Box::new(expr),
                         },
                         tokens_new,
-                    )
+                    ))
                 }
-                _ => (Expr::Token(Token::Int(*i)), tokens),
+                _ => Ok((Expr::Token(Token::Int(*i)), tokens)),
             },
             Some((Token::Float(f), _)) => match tokens.peek() {
                 Some((Token::Operator(op), _)) => {
                     tokens.next();
-                    let (expr, tokens_new) = Self::parse_expr(tokens, false);
-                    (
+                    let (expr, tokens_new) =
+                        if let Ok((expr, tokens_new)) = Self::parse_expr(tokens, false) {
+                            (expr, tokens_new)
+                        } else {
+                            todo!();
+                        };
+                    Ok((
                         Expr::BinaryExpr {
                             op: Operator::from_str(op),
                             lhs: Box::new(Expr::Token(Token::Float(*f))),
                             rhs: Box::new(expr),
                         },
                         tokens_new,
-                    )
+                    ))
                 }
-                _ => (Expr::Token(Token::Float(*f)), tokens),
+                _ => Ok((Expr::Token(Token::Float(*f)), tokens)),
             },
-            Some((Token::Bool(bool), _)) => (Expr::Token(Token::Bool(*bool)), tokens),
+            Some((Token::Bool(bool), _)) => Ok((Expr::Token(Token::Bool(*bool)), tokens)),
             Some((Token::String(string), _)) => match tokens.peek() {
                 Some((Token::Operator(op), _)) => {
                     tokens.next();
-                    let (expr, tokens_new) = Self::parse_expr(tokens, false);
-                    (
+                    let (expr, tokens_new) =
+                        if let Ok((expr, tokens_new)) = Self::parse_expr(tokens, false) {
+                            (expr, tokens_new)
+                        } else {
+                            todo!();
+                        };
+                    Ok((
                         Expr::BinaryExpr {
                             op: Operator::from_str(op),
                             lhs: Box::new(Expr::Token(Token::String(string.into()))),
                             rhs: Box::new(expr),
                         },
                         tokens_new,
-                    )
+                    ))
                 }
-                _ => (Expr::Token(Token::String(string.into())), tokens),
+                _ => Ok((Expr::Token(Token::String(string.into())), tokens)),
             },
             Some((Token::Func, _)) => {
                 sc_check = false;
@@ -234,15 +269,20 @@ impl Parser {
             Some((Token::Type(t), _)) => match tokens.next() {
                 Some((Token::Identifier(i), _)) => match tokens.next() {
                     Some((Token::SetVal, _)) => {
-                        let (expr, tokens_new) = Self::parse_expr(tokens, false);
-                        (
+                        let (expr, tokens_new) =
+                            if let Ok((expr, tokens_new)) = Self::parse_expr(tokens, false) {
+                                (expr, tokens_new)
+                            } else {
+                                todo!();
+                            };
+                        Ok((
                             Expr::BinaryExpr {
                                 op: Operator::SetVal(Some(t.clone())),
                                 lhs: Box::new(Expr::Token(Token::Identifier(i.into()))),
                                 rhs: Box::new(expr),
                             },
                             tokens_new,
-                        )
+                        ))
                     }
                     _ => {
                         if tokens.peek().is_some() {
@@ -340,19 +380,19 @@ impl Parser {
             let _span: Range<usize> = tokens_new.peek().unwrap().1.clone();
             if tokens_new.peek() == Some(&&(Token::Semicolon, _span)) {
                 tokens_new.next();
-                (expr, tokens_new)
+                Ok((expr, tokens_new))
             } else {
                 die("Expected semicolon".to_string());
                 unreachable!()
             }
         } else {
-            (expr, tokens_new)
+            Ok((expr, tokens_new))
         }
     }
 
     fn parse_fn_def<'a>(
         tokens: &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>,
-    ) -> (Expr, &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>) {
+    ) -> Result<(Expr, &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>), Error> {
         match tokens.next() {
             Some((Token::Identifier(ident), _)) => match tokens.next() {
                 Some((Token::LParen, span)) => {
@@ -409,7 +449,7 @@ impl Parser {
                             idx += 1;
                         }
                     }
-                    let (body, tokens_new) = match tokens.peek() {
+                    let Ok((body, tokens_new)) = match tokens.peek() {
                         Some((Token::ReturnType, _)) => {
                             tokens.next();
                             return_type = match tokens.next() {
@@ -427,7 +467,7 @@ impl Parser {
                             tokens.peek()
                         ),
                     };
-                    (
+                    Ok((
                         Expr::FnDef {
                             name: ident.into(),
                             args: vals,
@@ -435,7 +475,7 @@ impl Parser {
                             return_type,
                         },
                         tokens_new,
-                    )
+                    ))
                 }
                 _ => {
                     die(format!("Expected identifier, got {:?}", tokens.peek()));
@@ -451,17 +491,22 @@ impl Parser {
 
     fn handle_block<'a>(
         mut tokens: &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>,
-    ) -> (Vec<Expr>, &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>) {
+    ) -> Result<(Vec<Expr>, &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>), Error> {
         let mut exprs = Vec::new();
         let _span: Range<usize> = tokens.peek().unwrap().1.clone();
         if tokens.peek() == Some(&&(Token::LBrace, _span)) {
             tokens.next();
             loop {
-                let (expr, tokens_new) = Self::parse_expr(tokens, true);
+                let (expr, tokens_new) =
+                    if let Ok((expr, tokens_new)) = Self::parse_expr(tokens, true) {
+                        (expr, tokens_new)
+                    } else {
+                        todo!();
+                    };
                 exprs.push(expr);
                 if let Some((Token::RBrace, _)) = tokens_new.peek() {
                     tokens_new.next();
-                    return (exprs, tokens_new);
+                    return Ok((exprs, tokens_new));
                 };
                 tokens = tokens_new;
             }
@@ -474,20 +519,25 @@ impl Parser {
     fn parse_fn_call<'a>(
         ident: String,
         mut tokens: &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>,
-    ) -> (Expr, &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>) {
+    ) -> Result<(Expr, &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>), Error> {
         let mut args = Vec::new();
         let _span: Range<usize> = tokens.peek().unwrap().1.clone();
         if tokens.peek() == Some(&&(Token::RParen, _span)) {
             tokens.next();
-            (Expr::FnCall { name: ident, args }, tokens)
+            Ok((Expr::FnCall { name: ident, args }, tokens))
         } else {
             loop {
-                let (arg, tokens_new) = Self::parse_expr(tokens, false);
+                let (arg, tokens_new) =
+                    if let Ok((arg, tokens_new)) = Self::parse_expr(tokens, false) {
+                        (arg, tokens_new)
+                    } else {
+                        todo!();
+                    };
                 args.push(arg);
                 match tokens_new.next() {
                     Some((Token::Comma, _)) => (),
                     Some((Token::RParen, _)) => {
-                        return (Expr::FnCall { name: ident, args }, tokens_new)
+                        return Ok((Expr::FnCall { name: ident, args }, tokens_new))
                     }
                     _ => panic!("Expect comma, or ')'"),
                 };
@@ -498,51 +548,43 @@ impl Parser {
 
     fn parse_if<'a>(
         tokens: &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>,
-    ) -> (Expr, &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>) {
-        let (cond, tokens_after_cond) = Self::parse_expr(tokens, false);
+    ) -> Result<(Expr, &'a mut Peekable<Iter<'a, (Token, Range<usize>)>>), Error> {
+        let Ok((cond, tokens_after_cond)) = Self::parse_expr(tokens, false);
         let mut else_body: Option<Vec<Expr>> = None;
-        let (body, mut tokens) = Self::handle_block(tokens_after_cond);
+        let Ok((body, mut tokens)) = Self::handle_block(tokens_after_cond);
         let _span: Range<usize> = tokens.peek().unwrap().1.clone();
         if tokens.peek() == Some(&&(Token::Else, _span)) {
             tokens.next();
             match tokens.peek() {
                 Some((Token::LBrace, _)) => {
-                    let (exprs, tokens_new) = Self::handle_block(tokens);
+                    let Ok((exprs, tokens_new)) = Self::handle_block(tokens);
                     else_body = Some(exprs);
                     tokens = tokens_new;
                 }
                 Some((Token::If, _)) => {
                     tokens.next();
-                    let (expr, tokens_new) = Self::parse_if(tokens);
+                    let Ok((expr, tokens_new)) = Self::parse_if(tokens);
                     else_body = Some(vec![expr]);
                     tokens = tokens_new;
                 }
                 _ => {
-                    let mut colors = ColorGenerator::new();
-                    Report::build(
-                        ReportKind::Error,
-                        (), // FIXME: Actually get the filename, not sure how to yet
-                        tokens.peek().unwrap().1.clone().nth(0).unwrap(),
-                    )
-                    .with_message("Expected '{' or 'if'")
-                    .with_label(
-                        Label::new(tokens.peek().unwrap().1.clone())
-                            .with_message(format!("Got {}", tokens.peek().unwrap().0.to_string()))
-                            .with_color(colors.next()),
-                    )
-                    .finish()
-                    .print(Source::from(include_str!("../examples/ex1.psar")))
-                    .unwrap();
+                    return Err(Error {
+                        message: "Expected '{' or 'if'".to_string(),
+                        spans: vec![(
+                            tokens.peek().unwrap().1.clone(),
+                            format!("Got {}", tokens.peek().unwrap().0.to_string()),
+                        )],
+                    });
                 }
             };
         };
-        (
+        Ok((
             Expr::If {
                 cond: Box::new(cond),
                 body,
                 else_body,
             },
             tokens,
-        )
+        ))
     }
 }
