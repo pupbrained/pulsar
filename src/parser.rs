@@ -1,7 +1,6 @@
 use {
     crate::{die, lexer::Token},
     ariadne::{ColorGenerator, Label, Report, ReportKind, Source},
-    colored::Colorize,
     std::{collections::HashMap, fmt::Display, iter::Peekable, ops::Range, slice::Iter},
 };
 
