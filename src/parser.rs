@@ -1,5 +1,5 @@
 use {
-    crate::{die, lexer::Token, Error},
+    crate::{lexer::Token, Error},
     ariadne::{ColorGenerator, Label, Report, ReportKind, Source},
     std::{collections::HashMap, fmt::Display, iter::Peekable, ops::Range, slice::Iter},
 };
@@ -393,10 +393,13 @@ impl Parser {
                                                     break;
                                                 }
                                                 _ => {
-                                                    die(format!(
-                                                        "Expected , or ), got {:?}",
-                                                        tokens.peek()
-                                                    ));
+                                                    return Err(Error {
+                                                        message: format!(
+                                                            "Expected , or ), got {:?}",
+                                                            tokens.peek()
+                                                        ),
+                                                        spans: None,
+                                                    });
                                                 }
                                             };
                                         }
@@ -409,10 +412,13 @@ impl Parser {
                                             break;
                                         }
                                         _ => {
-                                            die(format!(
-                                                "Expected , or ), got {:?}",
-                                                tokens.peek()
-                                            ));
+                                            return Err(Error {
+                                                message: format!(
+                                                    "Expected , or ), got {:?}",
+                                                    tokens.peek()
+                                                ),
+                                                spans: None,
+                                            });
                                         }
                                     };
                                 }
@@ -449,15 +455,15 @@ impl Parser {
                         tokens_new,
                     ))
                 }
-                _ => {
-                    die(format!("Expected identifier, got {:?}", tokens.peek()));
-                    unreachable!()
-                }
+                _ => Err(Error {
+                    message: format!("Expected identifier, got {:?}", tokens.peek()),
+                    spans: None,
+                }),
             },
-            _ => {
-                die(format!("Expected identifier, got {:?}", tokens.peek()));
-                unreachable!()
-            }
+            _ => Err(Error {
+                message: format!("Expected identifier, got {:?}", tokens.peek()),
+                spans: None,
+            }),
         }
     }
 
@@ -478,8 +484,10 @@ impl Parser {
                 tokens = tokens_new;
             }
         } else {
-            die(format!("Expected {{, got {:?}", tokens.peek()));
-            unreachable!()
+            return Err(Error {
+                message: format!("Expected {{, got {:?}", tokens.peek()),
+                spans: None,
+            });
         };
     }
 

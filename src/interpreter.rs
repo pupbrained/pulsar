@@ -1,7 +1,5 @@
 use colored::Colorize;
 
-use crate::die;
-
 use {
     crate::{
         builtins,
@@ -371,8 +369,7 @@ fn interpret_expr(expr: &Expr, scope: &mut Scope) -> Value {
                 if let Some(val) = scope.get(x) {
                     *val.clone()
                 } else {
-                    die(format!("Undefined variable '{}'", x.green()));
-                    unreachable!()
+                    panic!("Undefined variable '{}'", x.green());
                 }
             }
             _ => Value::Nothing,

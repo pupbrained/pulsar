@@ -32,12 +32,6 @@ impl Error {
     }
 }
 
-// TODO: Finish replacing all instances of this function
-pub fn die(err: String) {
-    eprintln!("{} {}", "ERROR:".red(), err);
-    exit(1);
-}
-
 fn read_file() -> Result<String, Error> {
     let mut contents = String::new();
     File::open(Args::parse().file)
@@ -53,8 +47,7 @@ fn main() {
     let ast = match Parser::new(tokens).parse() {
         Ok(ast) => ast,
         Err(err) => {
-            die(format!("{:?}", err));
-            unreachable!()
+            panic!("{:?}", err);
         }
     };
     let mut interpreter = Interpreter::new(ast);
