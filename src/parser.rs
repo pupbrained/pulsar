@@ -392,7 +392,7 @@ impl Parser {
                     "Expected semicolon".into(),
                     Some(vec![(
                         tokens_new.peek().unwrap().1.clone(),
-                        "Expected semicolon".into(),
+                        format!("Got {}", tokens_new.peek().unwrap().0.to_string()),
                     )]),
                 ))
             }
