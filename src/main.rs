@@ -1,3 +1,5 @@
+use ariadne::{Label, Report, ReportKind, Source};
+
 mod builtins;
 mod interpreter;
 mod lexer;
@@ -41,15 +43,26 @@ fn read_file() -> Result<String, Error> {
     Ok(contents)
 }
 
-fn main() {
+fn main() -> () {
     use parser::Parser;
-    let tokens: Vec<_> = Token::lexer(&read_file().ok().unwrap()).spanned().collect();
-    let ast = match Parser::new(tokens).parse() {
-        Ok(ast) => ast,
-        Err(err) => {
-            panic!("{:?}", err);
+    let contents = read_file().unwrap();
+    let tokens: Vec<_> = Token::lexer(&contents).spanned().collect();
+    match Parser::new(tokens).parse() {
+        Ok(ast) => {
+            let mut interpreter = Interpreter::new(ast);
+            interpreter.run();
         }
-    };
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.run();
+        Err(Error { message, spans }) => {
+            println!("{}: {}", "ERROR".red(), message);
+            println!("{:#?}", spans);
+            Report::build(ReportKind::Error, "--file--", 0)
+                .with_label(
+                    Label::new(("sample.tao", 32..33))
+                        .with_message(format!("This is of type {}", "Nat")),
+                )
+                .finish()
+                .eprint(ariadne::Source::from(contents))
+                .unwrap();
+        }
+    }
 }
