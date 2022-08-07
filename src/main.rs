@@ -19,29 +19,44 @@ struct Args {
     file: String,
 }
 
+// Shared error struct for all parser/interpreter errors
+#[derive(Debug)]
 pub struct Error {
     pub message: String,
-    pub spans: Vec<(Range<usize>, String)>,
+    pub spans: Option<Vec<(Range<usize>, String)>>,
 }
 
+impl Error {
+    pub fn new(message: String, spans: Option<Vec<(Range<usize>, String)>>) -> Self {
+        Self { message, spans }
+    }
+}
+
+// TODO: Finish replacing all instances of this function
 pub fn die(err: String) {
     eprintln!("{} {}", "ERROR:".red(), err);
     exit(1);
 }
 
-fn read_file() -> String {
+fn read_file() -> Result<String, Error> {
     let mut contents = String::new();
     File::open(Args::parse().file)
         .unwrap()
         .read_to_string(&mut contents)
         .unwrap();
-    contents
+    Ok(contents)
 }
 
 fn main() {
     use parser::Parser;
-    let tokens: Vec<_> = Token::lexer(&read_file()).spanned().collect();
-    let ast = Parser::new(tokens).parse();
+    let tokens: Vec<_> = Token::lexer(&read_file().ok().unwrap()).spanned().collect();
+    let ast = match Parser::new(tokens).parse() {
+        Ok(ast) => ast,
+        Err(err) => {
+            die(format!("{:?}", err));
+            unreachable!()
+        }
+    };
     let mut interpreter = Interpreter::new(ast);
     interpreter.run();
 }

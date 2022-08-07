@@ -4,11 +4,13 @@ use {
     std::{collections::HashMap, fmt::Display, iter::Peekable, ops::Range, slice::Iter},
 };
 
+// Holds all tokens from the lexer
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parser {
     tokens: Vec<(Token, Range<usize>)>,
 }
 
+// Operators for the parser exprs
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Operator {
     Add,
@@ -24,6 +26,7 @@ pub enum Operator {
     SetVal(Option<String>),
 }
 
+// Helper function for converting a token's value to an operator value
 impl Operator {
     fn from_str(s: &str) -> Self {
         match s {
@@ -60,6 +63,7 @@ impl Display for Operator {
     }
 }
 
+// Every type of expression in the language
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Token(Token),
@@ -117,23 +121,21 @@ impl Parser {
         Parser { tokens }
     }
 
-    pub fn parse(&self) -> Vec<Expr> {
+    pub fn parse(&self) -> Result<Vec<Expr>, Error> {
         let mut exprs = Vec::new();
         let mut tokens = &mut self.tokens.iter().peekable();
         while {
             let this = &tokens.clone();
             this.len() != 0
         } {
-            let (expr, tokens_new) = if let Ok((expr, tokens_new)) = Self::parse_expr(tokens, true)
-            {
-                (expr, tokens_new)
-            } else {
-                todo!();
+            let (expr, tokens_new) = match Self::parse_expr(tokens, true) {
+                Ok((expr, tokens_new)) => (expr, tokens_new),
+                Err(e) => return Err(e),
             };
             tokens = tokens_new;
             exprs.push(expr);
         }
-        exprs
+        Ok(exprs)
     }
 
     fn parse_expr<'a>(
@@ -386,8 +388,13 @@ impl Parser {
                 tokens_new.next();
                 Ok((expr, tokens_new))
             } else {
-                die("Expected semicolon".to_string());
-                unreachable!()
+                Err(Error::new(
+                    "Expected semicolon".into(),
+                    Some(vec![(
+                        tokens_new.peek().unwrap().1.clone(),
+                        "Expected semicolon".into(),
+                    )]),
+                ))
             }
         } else {
             Ok((expr, tokens_new))
@@ -597,10 +604,10 @@ impl Parser {
                 _ => {
                     return Err(Error {
                         message: "Expected '{' or 'if'".to_string(),
-                        spans: vec![(
+                        spans: Some(vec![(
                             tokens.peek().unwrap().1.clone(),
                             format!("Got {}", tokens.peek().unwrap().0.to_string()),
-                        )],
+                        )]),
                     });
                 }
             };
